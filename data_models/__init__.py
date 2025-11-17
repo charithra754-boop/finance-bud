@@ -1,91 +1,36 @@
-"""
-FinPilot Data Models Package
+# FinPilot Multi-Agent System Data Models
+# Comprehensive Pydantic data contracts for agent communication
 
-Comprehensive Pydantic schemas for multi-agent system communication.
-"""
-
-from data_models.schemas import (
-    # Enums
-    MarketEventType,
-    SeverityLevel,
-    LifeEventType,
-    PlanStatus,
-    RiskTolerance,
-
-    # Market models
-    MarketData,
-    MarketContext,
-
-    # Trigger models
-    TriggerEvent,
-
-    # Financial models
-    TaxContext,
-    RegulatoryRequirement,
-    RiskProfile,
-    FinancialState,
-    Constraint,
-
-    # Planning models
-    PlanStep,
-    PlanRequest,
-    FinancialPlan,
-
-    # Verification models
-    VerificationReport,
-    ComplianceStatus,
-
-    # Communication models
-    AgentMessage,
-    ExecutionLog,
-
-    # Reasoning models
-    ReasoningTrace,
-    SearchPath,
-
-    # Metrics
-    PerformanceMetrics,
-)
+from .schemas import *
 
 __all__ = [
-    # Enums
-    'MarketEventType',
-    'SeverityLevel',
-    'LifeEventType',
-    'PlanStatus',
-    'RiskTolerance',
-
-    # Market models
-    'MarketData',
-    'MarketContext',
-
-    # Trigger models
-    'TriggerEvent',
-
-    # Financial models
-    'TaxContext',
-    'RegulatoryRequirement',
-    'RiskProfile',
-    'FinancialState',
-    'Constraint',
-
-    # Planning models
-    'PlanStep',
-    'PlanRequest',
-    'FinancialPlan',
-
-    # Verification models
-    'VerificationReport',
-    'ComplianceStatus',
-
-    # Communication models
-    'AgentMessage',
-    'ExecutionLog',
-
-    # Reasoning models
-    'ReasoningTrace',
-    'SearchPath',
-
-    # Metrics
-    'PerformanceMetrics',
+    # Core Communication Models
+    "AgentMessage",
+    "EnhancedPlanRequest", 
+    "PlanStep",
+    "VerificationReport",
+    
+    # Market and Trigger Models
+    "MarketData",
+    "TriggerEvent",
+    "ComplexMarketTrigger",
+    
+    # Financial Models
+    "FinancialState",
+    "Constraint",
+    "ExecutionLog",
+    
+    # Reasoning and Search Models
+    "ReasoningTrace",
+    "SearchPath",
+    
+    # Risk and Compliance Models
+    "RiskProfile",
+    "TaxContext", 
+    "RegulatoryRequirement",
+    "ComplianceStatus",
+    
+    # Performance and Metrics
+    "PerformanceMetrics",
+    "AuditTrail"
 ]

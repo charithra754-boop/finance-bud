@@ -1,583 +1,455 @@
 """
-FinPilot Multi-Agent System - Comprehensive Data Schemas
+FinPilot Multi-Agent System - Comprehensive Pydantic Data Contracts
 
-This module defines all Pydantic data contracts shared across agents.
-These schemas ensure type safety and validation for inter-agent communication.
+This module defines all data models for inter-agent communication, financial planning,
+market data, and system operations. All models include comprehensive validation,
+documentation, and support for advanced features like correlation tracking,
+performance metrics, and regulatory compliance.
 
-Requirements: 6.1, 6.2, 9.1, 9.3, 28.1, 28.4, 28.5
+Requirements covered: 6.1, 6.2, 9.1, 9.3, 28.1, 28.4, 28.5
 """
 
 from datetime import datetime
+from decimal import Decimal
+from typing import Any, Dict, List, Optional, Union, Literal
 from enum import Enum
-from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, validator
+from uuid import uuid4
+
+# Supabase integration
+try:
+    from ..supabase.database import db
+except ImportError:
+    db = None
 
 
 # ============================================================================
-# ENUMS - Standard types across the system
+# ENUMS AND CONSTANTS
 # ============================================================================
 
-class MarketEventType(str, Enum):
-    """Types of market events that can trigger replanning"""
-    CRASH = "crash"
-    RECOVERY = "recovery"
-    VOLATILITY_SPIKE = "volatility_spike"
-    SECTOR_ROTATION = "sector_rotation"
-    REGULATORY_CHANGE = "regulatory_change"
-    INTEREST_RATE_CHANGE = "interest_rate_change"
-    ECONOMIC_INDICATOR = "economic_indicator"
+class AgentType(str, Enum):
+    """Agent types in the VP-MAS system"""
+    ORCHESTRATION = "orchestration"
+    PLANNING = "planning"
+    INFORMATION_RETRIEVAL = "information_retrieval"
+    VERIFICATION = "verification"
+    EXECUTION = "execution"
 
 
-class SeverityLevel(str, Enum):
-    """Severity assessment for triggers and events"""
-    CRITICAL = "critical"  # Immediate action required
-    HIGH = "high"          # Urgent attention needed
-    MEDIUM = "medium"      # Should be addressed soon
-    LOW = "low"            # Informational/monitoring
+class MessageType(str, Enum):
+    """Types of inter-agent messages"""
+    REQUEST = "request"
+    RESPONSE = "response"
+    NOTIFICATION = "notification"
+    ERROR = "error"
+    HEARTBEAT = "heartbeat"
 
 
-class LifeEventType(str, Enum):
-    """Types of life events that can trigger replanning"""
-    JOB_LOSS = "job_loss"
-    JOB_CHANGE = "job_change"
-    MARRIAGE = "marriage"
-    DIVORCE = "divorce"
-    CHILD_BIRTH = "child_birth"
-    FAMILY_EMERGENCY = "family_emergency"
-    HEALTH_ISSUE = "health_issue"
-    INHERITANCE = "inheritance"
-    MAJOR_PURCHASE = "major_purchase"
-    RETIREMENT = "retirement"
+class Priority(str, Enum):
+    """Message and task priority levels"""
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
-class PlanStatus(str, Enum):
-    """Status of a financial plan"""
+class ExecutionStatus(str, Enum):
+    """Status of execution operations"""
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class VerificationStatus(str, Enum):
+    """Verification result status"""
+    APPROVED = "approved"
     REJECTED = "rejected"
-    NEEDS_REVISION = "needs_revision"
+    CONDITIONAL = "conditional"
+    PENDING = "pending"
+# CORE COMMUNICATION MODELS
+
+class PerformanceMetrics(BaseModel):
+    """
+    Performance metrics for tracking agent and system performance.
+    Used for monitoring, optimization, and debugging purposes.
+    """
+    execution_time: float = Field(..., description="Execution time in seconds")
+    memory_usage: float = Field(..., description="Memory usage in MB")
+    api_calls: int = Field(default=0, description="Number of API calls made")
+    cache_hits: int = Field(default=0, description="Number of cache hits")
+    cache_misses: int = Field(default=0, description="Number of cache misses")
+    error_count: int = Field(default=0, description="Number of errors encountered")
+    success_rate: float = Field(default=1.0, ge=0.0, le=1.0, description="Success rate (0-1)")
+    throughput: float = Field(default=0.0, description="Operations per second")
+    latency_p50: float = Field(default=0.0, description="50th percentile latency in ms")
+    latency_p95: float = Field(default=0.0, description="95th percentile latency in ms")
+    latency_p99: float = Field(default=0.0, description="99th percentile latency in ms")
 
 
-class RiskTolerance(str, Enum):
-    """User's risk tolerance level"""
-    CONSERVATIVE = "conservative"
-    MODERATE = "moderate"
-    AGGRESSIVE = "aggressive"
-    VERY_AGGRESSIVE = "very_aggressive"
+class AgentMessage(BaseModel):
+    """
+    Enhanced agent message for inter-agent communication with correlation tracking,
+    performance metrics, and comprehensive metadata for debugging and monitoring.
+    
+    Used by all agents for structured communication in the VP-MAS system.
+    """
+    message_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique message identifier")
+    agent_id: str = Field(..., description="ID of the sending agent")
+    target_agent_id: Optional[str] = Field(None, description="ID of the target agent (None for broadcast)")
+    message_type: MessageType = Field(..., description="Type of message being sent")
+    payload: Dict[str, Any] = Field(..., description="Message payload data")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Message creation timestamp")
+    correlation_id: str = Field(..., description="Correlation ID for tracking related messages")
+    session_id: str = Field(..., description="Session ID for user interaction tracking")
+    priority: Priority = Field(default=Priority.MEDIUM, description="Message priority level")
+    trace_id: str = Field(..., description="Distributed tracing identifier")
+    performance_metrics: Optional[PerformanceMetrics] = Field(None, description="Performance metrics for this message")
+    retry_count: int = Field(default=0, description="Number of retry attempts")
+    expires_at: Optional[datetime] = Field(None, description="Message expiration timestamp")
 
 
-# ============================================================================
-# MARKET DATA MODELS
-# ============================================================================
+class EnhancedPlanRequest(BaseModel):
+    """
+    Enhanced planning request with comprehensive context, constraints, and metadata.
+    Used by the Orchestration Agent to request financial plans from the Planning Agent.
+    
+    Supports complex multi-constraint scenarios, regulatory requirements, and tax optimization.
+    """
+    request_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique request identifier")
+    user_id: str = Field(..., description="User identifier for the planning request")
+    user_goal: str = Field(..., description="Natural language description of the financial goal")
+    current_state: Dict[str, Any] = Field(..., description="Current financial state of the user")
+    constraints: List[Dict[str, Any]] = Field(default_factory=list, description="Financial and regulatory constraints")
+    trigger_type: Optional[str] = Field(None, description="Type of trigger that initiated this request")
+    scenario_context: Optional[Dict[str, Any]] = Field(None, description="Additional scenario context")
+    risk_profile: Dict[str, Any] = Field(..., description="User's risk tolerance and preferences")
+    regulatory_requirements: List[Dict[str, Any]] = Field(default_factory=list, description="Applicable regulatory requirements")
+    tax_considerations: Dict[str, Any] = Field(..., description="Tax context and optimization preferences")
+    time_horizon: int = Field(..., gt=0, description="Planning time horizon in months")
+    optimization_preferences: Dict[str, Any] = Field(default_factory=dict, description="User optimization preferences")
+    correlation_id: str = Field(..., description="Correlation ID for tracking")
+    session_id: str = Field(..., description="Session ID for user interaction")
+    priority: Priority = Field(default=Priority.MEDIUM, description="Request priority")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Request creation timestamp")
+    
+    @validator('time_horizon')
+    def validate_time_horizon(cls, v):
+        if v > 600:  # 50 years
+            raise ValueError('Time horizon cannot exceed 600 months (50 years)')
+        return v
+
+
+class PlanStep(BaseModel):
+    """Individual step in a financial plan with detailed metadata"""
+    step_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique step identifier")
+    sequence_number: int = Field(..., ge=1, description="Order of this step in the plan")
+    action_type: str = Field(..., description="Type of financial action")
+    description: str = Field(..., description="Human-readable description of the step")
+    amount: Decimal = Field(..., description="Monetary amount for this step")
+    target_date: datetime = Field(..., description="Target execution date")
+    rationale: str = Field(..., description="Explanation of why this step is recommended")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in recommendation")
+    risk_level: str = Field(..., description="Risk level associated with this step")
+
+
+class VerificationReport(BaseModel):
+    """Comprehensive verification report with detailed analysis"""
+    report_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique report identifier")
+    plan_id: str = Field(..., description="ID of the plan being verified")
+    verification_status: VerificationStatus = Field(..., description="Overall verification status")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Verification completion timestamp")
+    constraints_checked: int = Field(..., description="Total number of constraints checked")
+    constraints_passed: int = Field(..., description="Number of constraints that passed")
+    constraint_violations: List[Dict[str, Any]] = Field(default_factory=list, description="Detailed constraint violations")
+    overall_risk_score: float = Field(..., ge=0.0, le=1.0, description="Overall risk score")
+    approval_rationale: str = Field(..., description="Rationale for approval/rejection decision")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in verification results")
+    verification_time: float = Field(..., description="Time taken for verification in seconds")
+    verifier_agent_id: str = Field(..., description="ID of the agent that performed verification")
+    correlation_id: str = Field(..., description="Correlation ID for tracking")
+
+
+# Market Data Models
+class SeverityLevel(str, Enum):
+    """Severity levels for market events and triggers"""
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
+
+
+class MarketEventType(str, Enum):
+    """Types of market events"""
+    VOLATILITY_SPIKE = "volatility_spike"
+    MARKET_CRASH = "market_crash"
+    MARKET_RECOVERY = "market_recovery"
+    SECTOR_ROTATION = "sector_rotation"
+    INTEREST_RATE_CHANGE = "interest_rate_change"
+    REGULATORY_CHANGE = "regulatory_change"
+
 
 class MarketData(BaseModel):
-    """
-    Comprehensive market data from multiple sources.
+    """Comprehensive market data with predictive indicators"""
+    data_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique data identifier")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Data collection timestamp")
+    source: str = Field(..., description="Data source")
+    market_volatility: float = Field(..., ge=0.0, description="Current market volatility index")
+    interest_rates: Dict[str, float] = Field(..., description="Interest rates by type")
+    sector_trends: Dict[str, float] = Field(..., description="Sector performance trends")
+    economic_sentiment: float = Field(..., ge=-1.0, le=1.0, description="Economic sentiment score")
+    collection_method: str = Field(..., description="Method used to collect this data")
+    refresh_frequency: int = Field(..., description="Data refresh frequency in seconds")
 
-    Used by IRA to provide enriched market context to other agents.
-    Includes real-time prices, volatility indicators, and predictive analytics.
-    """
-    model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "symbol": "NIFTY50",
-            "price": 19500.50,
-            "change_percent": -2.3,
-            "volume": 1250000,
-            "volatility": 18.5,
-            "timestamp": "2025-11-17T10:30:00Z"
-        }
-    })
-
-    symbol: str = Field(..., description="Stock/index symbol")
-    price: float = Field(..., description="Current price")
-    change_percent: float = Field(..., description="Percentage change from previous close")
-    volume: Optional[int] = Field(None, description="Trading volume")
-    volatility: Optional[float] = Field(None, description="Volatility indicator (VIX-style)")
-
-    # Market context
-    market_sentiment: Optional[str] = Field(None, description="Bullish/Bearish/Neutral")
-    sector_trend: Optional[str] = Field(None, description="Sector performance trend")
-    correlation_indices: Optional[Dict[str, float]] = Field(None, description="Correlation with other indices")
-
-    # Predictive indicators
-    predicted_volatility: Optional[float] = Field(None, description="Predicted volatility next period")
-    risk_score: Optional[float] = Field(None, description="Risk score 0-100")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now, description="Data timestamp")
-    source: str = Field("unknown", description="Data source (barchart/alphavantage/massive)")
-
-    @validator('volatility', 'predicted_volatility')
-    def validate_volatility(cls, v):
-        if v is not None and (v < 0 or v > 200):
-            raise ValueError('Volatility must be between 0 and 200')
-        return v
-
-
-class MarketContext(BaseModel):
-    """
-    Enriched market context with multiple data points.
-
-    Returned by IRA's get_market_context() function.
-    Provides comprehensive view of market conditions for planning.
-    """
-    # Core indicators
-    market_volatility: float = Field(..., description="Overall market volatility index")
-    interest_rate: float = Field(..., description="Current benchmark interest rate")
-    inflation_rate: Optional[float] = Field(None, description="Current inflation rate")
-
-    # Market state
-    economic_sentiment: str = Field(..., description="Overall economic sentiment")
-    sector_trends: Dict[str, str] = Field(default_factory=dict, description="Trends by sector")
-
-    # Specific asset data
-    indices: Dict[str, MarketData] = Field(default_factory=dict, description="Major index data")
-    commodities: Optional[Dict[str, MarketData]] = Field(None, description="Commodity prices")
-
-    # Regulatory and news
-    regulatory_changes: List[str] = Field(default_factory=list, description="Recent regulatory updates")
-    major_events: List[str] = Field(default_factory=list, description="Major market events")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    confidence_score: float = Field(0.95, description="Data confidence score 0-1")
-
-    @validator('market_volatility')
-    def validate_market_volatility(cls, v):
-        if v < 0 or v > 100:
-            raise ValueError('Market volatility must be between 0 and 100')
-        return v
-
-
-# ============================================================================
-# TRIGGER EVENT MODELS
-# ============================================================================
 
 class TriggerEvent(BaseModel):
-    """
-    Event that triggers CMVL (Continuous Monitoring and Verification Loop).
-
-    Can be market events, life events, or scheduled reviews.
-    """
-    event_id: str = Field(..., description="Unique event identifier")
-    event_type: Union[MarketEventType, LifeEventType, str] = Field(..., description="Type of trigger event")
-    severity: SeverityLevel = Field(..., description="Event severity level")
-
-    # Event details
-    description: str = Field(..., description="Human-readable event description")
-    impact_assessment: Optional[str] = Field(None, description="Expected impact on plan")
-    confidence: float = Field(0.9, description="Detection confidence 0-1")
-
-    # Market-specific fields
-    market_data: Optional[MarketData] = Field(None, description="Related market data if applicable")
-    affected_assets: List[str] = Field(default_factory=list, description="Assets affected by event")
-
-    # Life event-specific fields
-    financial_impact: Optional[float] = Field(None, description="Estimated financial impact (positive/negative)")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    source: str = Field(..., description="Source of trigger detection")
-    correlation_id: Optional[str] = Field(None, description="Correlation ID for tracking")
-
-    # Action recommendations
-    recommended_actions: List[str] = Field(default_factory=list, description="Suggested actions")
-    requires_immediate_action: bool = Field(False, description="Requires immediate replanning")
+    """Market or life event trigger with severity assessment"""
+    trigger_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique trigger identifier")
+    trigger_type: str = Field(..., description="Type of trigger")
+    event_type: MarketEventType = Field(..., description="Specific event classification")
+    severity: SeverityLevel = Field(..., description="Severity level of the trigger")
+    description: str = Field(..., description="Human-readable description of the trigger event")
+    source_data: Dict[str, Any] = Field(..., description="Raw data that triggered the event")
+    detected_at: datetime = Field(default_factory=datetime.utcnow, description="When the trigger was detected")
+    impact_score: float = Field(..., ge=0.0, le=1.0, description="Estimated impact score")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in trigger detection")
+    detector_agent_id: str = Field(..., description="ID of agent that detected this trigger")
+    correlation_id: str = Field(..., description="Correlation ID for tracking")
 
 
-# ============================================================================
-# FINANCIAL STATE MODELS
-# ============================================================================
-
-class TaxContext(BaseModel):
-    """Tax context for financial planning"""
-    tax_bracket: str = Field(..., description="Current tax bracket")
-    annual_income: float = Field(..., description="Annual taxable income")
-    tax_deductions: Dict[str, float] = Field(default_factory=dict, description="Available deductions")
-    tax_credits: Dict[str, float] = Field(default_factory=dict, description="Available tax credits")
-    tax_jurisdiction: str = Field("India", description="Tax jurisdiction")
-
-    # Tax optimization
-    tax_saving_instruments: List[str] = Field(default_factory=list, description="80C, 80D, etc.")
-    estimated_tax_liability: Optional[float] = Field(None, description="Estimated annual tax")
+# Financial Models
+class ConstraintType(str, Enum):
+    """Types of financial constraints"""
+    BUDGET = "budget"
+    RISK = "risk"
+    LIQUIDITY = "liquidity"
+    REGULATORY = "regulatory"
+    TAX = "tax"
+    TIME = "time"
+    GOAL = "goal"
+    COMPLIANCE = "compliance"
 
 
-class RegulatoryRequirement(BaseModel):
-    """Regulatory compliance requirement"""
-    requirement_id: str = Field(..., description="Requirement identifier")
-    regulation_name: str = Field(..., description="Name of regulation")
-    jurisdiction: str = Field(..., description="Applicable jurisdiction")
-    compliance_status: str = Field("unknown", description="Current compliance status")
-    deadline: Optional[datetime] = Field(None, description="Compliance deadline")
-    description: str = Field(..., description="Requirement description")
-
-
-class RiskProfile(BaseModel):
-    """User's risk profile and preferences"""
-    risk_tolerance: RiskTolerance = Field(..., description="Overall risk tolerance")
-    investment_horizon: int = Field(..., description="Investment horizon in years")
-
-    # Risk preferences
-    max_drawdown_tolerance: float = Field(20.0, description="Maximum acceptable drawdown %")
-    volatility_tolerance: float = Field(15.0, description="Acceptable volatility level")
-
-    # Preferences
-    ethical_investing: bool = Field(False, description="Prefer ESG investments")
-    sector_preferences: List[str] = Field(default_factory=list, description="Preferred sectors")
-    sector_exclusions: List[str] = Field(default_factory=list, description="Excluded sectors")
+class ConstraintPriority(str, Enum):
+    """Priority levels for constraints"""
+    MANDATORY = "mandatory"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    OPTIONAL = "optional"
 
 
 class FinancialState(BaseModel):
-    """
-    Complete financial state of the user.
-
-    Used by all agents to understand user's current financial position.
-    """
+    """Comprehensive financial state with regulatory compliance and tax context"""
+    state_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique state identifier")
     user_id: str = Field(..., description="User identifier")
-
-    # Assets and liabilities
-    total_assets: float = Field(..., description="Total asset value")
-    total_liabilities: float = Field(0.0, description="Total liabilities")
-    net_worth: float = Field(..., description="Net worth (assets - liabilities)")
-
-    # Income and expenses
-    monthly_income: float = Field(..., description="Monthly income")
-    monthly_expenses: float = Field(..., description="Monthly expenses")
-    savings_rate: float = Field(..., description="Savings rate as percentage")
-
-    # Portfolio breakdown
-    portfolio: Dict[str, float] = Field(default_factory=dict, description="Asset allocation by type")
-    emergency_fund: float = Field(0.0, description="Emergency fund balance")
-
-    # Context
-    risk_profile: RiskProfile = Field(..., description="User's risk profile")
-    tax_context: TaxContext = Field(..., description="Tax context")
-
-    # Goals
-    financial_goals: List[str] = Field(default_factory=list, description="User's financial goals")
-    goal_timeline: Optional[Dict[str, int]] = Field(None, description="Timeline for goals in years")
-
-    # Metadata
-    last_updated: datetime = Field(default_factory=datetime.now)
-
-    @validator('net_worth')
+    as_of_date: datetime = Field(default_factory=datetime.utcnow, description="Date of this financial snapshot")
+    total_assets: Decimal = Field(..., ge=0, description="Total asset value")
+    total_liabilities: Decimal = Field(..., ge=0, description="Total liability value")
+    net_worth: Decimal = Field(..., description="Net worth (assets - liabilities)")
+    monthly_income: Decimal = Field(..., ge=0, description="Monthly gross income")
+    monthly_expenses: Decimal = Field(..., ge=0, description="Monthly expenses")
+    monthly_cash_flow: Decimal = Field(..., description="Monthly net cash flow")
+    risk_tolerance: str = Field(..., description="Risk tolerance level")
+    tax_filing_status: str = Field(..., description="Tax filing status")
+    estimated_tax_rate: float = Field(..., ge=0.0, le=1.0, description="Estimated effective tax rate")
+    
+    @validator('net_worth', always=True)
     def calculate_net_worth(cls, v, values):
         if 'total_assets' in values and 'total_liabilities' in values:
-            calculated = values['total_assets'] - values['total_liabilities']
-            if abs(calculated - v) > 0.01:  # Allow small floating point differences
-                return calculated
+            return values['total_assets'] - values['total_liabilities']
+        return v
+    
+    @validator('monthly_cash_flow', always=True)
+    def calculate_cash_flow(cls, v, values):
+        if 'monthly_income' in values and 'monthly_expenses' in values:
+            return values['monthly_income'] - values['monthly_expenses']
         return v
 
 
 class Constraint(BaseModel):
-    """Financial constraint for planning"""
-    constraint_id: str = Field(..., description="Constraint identifier")
-    constraint_type: str = Field(..., description="Type: budget/regulatory/risk/timeline")
-    description: str = Field(..., description="Constraint description")
-
-    # Constraint parameters
-    max_value: Optional[float] = Field(None, description="Maximum allowed value")
-    min_value: Optional[float] = Field(None, description="Minimum required value")
-
-    # Compliance
-    is_hard_constraint: bool = Field(True, description="Hard vs soft constraint")
-    priority: int = Field(1, description="Priority level 1-10")
-
-    # Metadata
-    source: str = Field("user", description="Source of constraint")
-    active: bool = Field(True, description="Is constraint active")
-
-
-# ============================================================================
-# PLANNING MODELS
-# ============================================================================
-
-class PlanStep(BaseModel):
-    """Individual step in a financial plan"""
-    step_id: str = Field(..., description="Step identifier")
-    sequence_number: int = Field(..., description="Order in plan")
-
-    # Action details
-    action: str = Field(..., description="Action to take")
-    description: str = Field(..., description="Detailed description")
-    amount: Optional[float] = Field(None, description="Amount involved")
-
-    # Timing
-    execute_at: Optional[datetime] = Field(None, description="Execution date")
-    duration_months: Optional[int] = Field(None, description="Duration in months")
-
-    # Impact
-    expected_return: Optional[float] = Field(None, description="Expected return %")
-    risk_level: Optional[str] = Field(None, description="Risk level")
-    tax_implication: Optional[str] = Field(None, description="Tax implications")
-
-    # Validation
-    constraints_satisfied: List[str] = Field(default_factory=list, description="Satisfied constraints")
-    regulatory_compliant: bool = Field(True, description="Meets regulatory requirements")
-
-    # Metadata
-    rationale: Optional[str] = Field(None, description="Reasoning for this step")
-    alternatives_considered: List[str] = Field(default_factory=list, description="Alternative approaches")
-
-
-class PlanRequest(BaseModel):
-    """Request to create or update a financial plan"""
-    request_id: str = Field(..., description="Request identifier")
-    correlation_id: str = Field(..., description="Correlation ID for tracking")
-
-    # User context
-    user_id: str = Field(..., description="User identifier")
-    financial_state: FinancialState = Field(..., description="Current financial state")
-
-    # Planning parameters
-    goal: str = Field(..., description="Primary goal")
-    constraints: List[Constraint] = Field(default_factory=list, description="Planning constraints")
-    time_horizon: int = Field(..., description="Planning horizon in years")
-
-    # Trigger context (if replanning)
-    trigger_event: Optional[TriggerEvent] = Field(None, description="Event triggering replanning")
-    previous_plan_id: Optional[str] = Field(None, description="Previous plan if updating")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    priority: str = Field("normal", description="Request priority")
-
-
-class FinancialPlan(BaseModel):
-    """Complete financial plan generated by Planning Agent"""
-    plan_id: str = Field(..., description="Plan identifier")
-    correlation_id: str = Field(..., description="Correlation ID")
-
-    # Plan details
-    goal: str = Field(..., description="Plan goal")
-    steps: List[PlanStep] = Field(..., description="Ordered plan steps")
-
-    # Performance metrics
-    expected_final_value: float = Field(..., description="Expected portfolio value at end")
-    probability_of_success: float = Field(..., description="Success probability 0-1")
-    risk_adjusted_return: float = Field(..., description="Risk-adjusted return metric")
-
-    # Compliance
-    constraints_satisfied: List[str] = Field(default_factory=list, description="Satisfied constraints")
-    regulatory_compliance: bool = Field(True, description="Meets all regulations")
-
-    # Tax optimization
-    tax_efficiency_score: Optional[float] = Field(None, description="Tax efficiency 0-100")
-    estimated_tax_impact: Optional[float] = Field(None, description="Estimated tax impact")
-
-    # Metadata
-    created_at: datetime = Field(default_factory=datetime.now)
-    created_by: str = Field("PlanningAgent", description="Agent that created plan")
-    status: PlanStatus = Field(PlanStatus.PENDING, description="Plan status")
-
-    # Reasoning trace
-    reasoning_summary: Optional[str] = Field(None, description="Summary of reasoning")
-    alternatives_count: int = Field(0, description="Number of alternatives explored")
-
-
-# ============================================================================
-# VERIFICATION MODELS
-# ============================================================================
-
-class VerificationReport(BaseModel):
-    """Verification report from Verification Agent"""
-    report_id: str = Field(..., description="Report identifier")
-    correlation_id: str = Field(..., description="Correlation ID")
-    plan_id: str = Field(..., description="Plan being verified")
-
-    # Verification results
-    approved: bool = Field(..., description="Is plan approved")
-    confidence_score: float = Field(..., description="Verification confidence 0-1")
-
-    # Detailed findings
-    constraint_violations: List[str] = Field(default_factory=list, description="Constraint violations found")
-    risk_warnings: List[str] = Field(default_factory=list, description="Risk warnings")
-    regulatory_issues: List[str] = Field(default_factory=list, description="Regulatory compliance issues")
-
-    # Recommendations
-    recommendations: List[str] = Field(default_factory=list, description="Recommendations for improvement")
-    rejection_reason: Optional[str] = Field(None, description="Reason if rejected")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    verified_by: str = Field("VerificationAgent", description="Verifying agent")
-
-
-class ComplianceStatus(BaseModel):
-    """Compliance status for regulatory requirements"""
-    requirement_id: str = Field(..., description="Requirement identifier")
-    compliant: bool = Field(..., description="Is compliant")
-    compliance_score: float = Field(..., description="Compliance score 0-1")
-    issues: List[str] = Field(default_factory=list, description="Compliance issues")
-    last_checked: datetime = Field(default_factory=datetime.now)
-
-
-# ============================================================================
-# AGENT COMMUNICATION MODELS
-# ============================================================================
-
-class AgentMessage(BaseModel):
-    """Message passed between agents"""
-    message_id: str = Field(..., description="Message identifier")
-    correlation_id: str = Field(..., description="Correlation ID for request tracking")
-
-    # Routing
-    from_agent: str = Field(..., description="Sending agent")
-    to_agent: str = Field(..., description="Receiving agent")
-    message_type: str = Field(..., description="Message type")
-
-    # Payload
-    payload: Dict[str, Any] = Field(..., description="Message payload")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    priority: str = Field("normal", description="Message priority")
-    requires_response: bool = Field(False, description="Requires acknowledgment")
+    """Advanced financial constraint with regulatory compliance and tax context"""
+    constraint_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique constraint identifier")
+    name: str = Field(..., description="Human-readable constraint name")
+    constraint_type: ConstraintType = Field(..., description="Type of constraint")
+    priority: ConstraintPriority = Field(..., description="Constraint priority level")
+    description: str = Field(..., description="Detailed description of the constraint")
+    validation_rule: str = Field(..., description="Rule for validating this constraint")
+    threshold_value: Union[float, int, str] = Field(..., description="Threshold value for constraint")
+    comparison_operator: str = Field(..., description="Comparison operator")
+    violation_severity: SeverityLevel = Field(default=SeverityLevel.MEDIUM, description="Severity of violating this constraint")
+    created_by: str = Field(..., description="Agent or system that created this constraint")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Constraint creation timestamp")
 
 
 class ExecutionLog(BaseModel):
-    """Log entry for plan execution"""
-    log_id: str = Field(..., description="Log identifier")
-    plan_id: str = Field(..., description="Plan being executed")
-    step_id: str = Field(..., description="Step being executed")
-
-    # Execution details
-    action_taken: str = Field(..., description="Action executed")
-    amount: Optional[float] = Field(None, description="Amount transacted")
-    status: str = Field(..., description="Execution status")
-
-    # Results
-    success: bool = Field(..., description="Was execution successful")
-    error_message: Optional[str] = Field(None, description="Error if failed")
-
-    # Audit trail
-    executed_at: datetime = Field(default_factory=datetime.now)
-    executed_by: str = Field("ExecutionAgent", description="Executing agent")
-    transaction_id: Optional[str] = Field(None, description="Transaction ID if applicable")
+    """Comprehensive execution log with regulatory compliance and audit trail"""
+    log_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique log entry identifier")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Log entry timestamp")
+    agent_id: str = Field(..., description="ID of the agent performing the action")
+    action_type: str = Field(..., description="Type of action being performed")
+    operation_name: str = Field(..., description="Name of the specific operation")
+    execution_status: ExecutionStatus = Field(..., description="Status of the execution")
+    input_data: Dict[str, Any] = Field(..., description="Input data for the operation")
+    output_data: Dict[str, Any] = Field(default_factory=dict, description="Output data from the operation")
+    execution_time: float = Field(..., description="Execution time in seconds")
+    session_id: str = Field(..., description="Session ID for tracking")
+    correlation_id: str = Field(..., description="Correlation ID for related operations")
+    trace_id: str = Field(..., description="Distributed tracing identifier")
 
 
-# ============================================================================
-# REASONING & VISUALIZATION MODELS
-# ============================================================================
-
-class ReasoningTrace(BaseModel):
-    """Trace of reasoning steps for visualization"""
-    trace_id: str = Field(..., description="Trace identifier")
-    plan_id: str = Field(..., description="Associated plan")
-
-    # Reasoning steps
-    step_number: int = Field(..., description="Step number in reasoning")
-    description: str = Field(..., description="What was considered")
-    decision: str = Field(..., description="Decision made")
-    rationale: str = Field(..., description="Why this decision")
-
-    # Alternatives
-    alternatives_considered: List[str] = Field(default_factory=list)
-    rejected_alternatives: List[str] = Field(default_factory=list)
-
-    # Metrics
-    confidence_score: float = Field(..., description="Confidence in decision 0-1")
-    information_gain: Optional[float] = Field(None, description="Information gain from this step")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    agent: str = Field(..., description="Agent making decision")
+# Reasoning Models
+class DecisionPoint(BaseModel):
+    """Individual decision point in the reasoning process"""
+    decision_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique decision identifier")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Decision timestamp")
+    decision_type: str = Field(..., description="Type of decision made")
+    options_considered: List[Dict[str, Any]] = Field(..., description="Options that were considered")
+    chosen_option: Dict[str, Any] = Field(..., description="Option that was chosen")
+    rationale: str = Field(..., description="Reasoning behind the decision")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in the decision")
 
 
 class SearchPath(BaseModel):
-    """Search path explored during planning"""
-    path_id: str = Field(..., description="Path identifier")
-    correlation_id: str = Field(..., description="Correlation ID")
-
-    # Path details
-    steps: List[str] = Field(..., description="Steps in this path")
-    score: float = Field(..., description="Path score")
-
-    # Evaluation metrics
-    constraint_satisfaction: float = Field(..., description="How well constraints satisfied 0-1")
-    expected_return: float = Field(..., description="Expected return")
-    risk_score: float = Field(..., description="Risk score")
-
-    # Status
-    pruned: bool = Field(False, description="Was path pruned")
-    pruning_reason: Optional[str] = Field(None, description="Why pruned")
-    selected: bool = Field(False, description="Was this path selected")
-
-    # Metadata
-    explored_at: datetime = Field(default_factory=datetime.now)
+    """Detailed search path with visualization metadata for ReasonGraph display"""
+    path_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique path identifier")
+    search_session_id: str = Field(..., description="ID of the search session this path belongs to")
+    path_type: str = Field(..., description="Type of search path")
+    sequence_steps: List[Dict[str, Any]] = Field(..., description="Ordered sequence of steps in this path")
+    decision_points: List[DecisionPoint] = Field(default_factory=list, description="Key decision points along the path")
+    total_cost: float = Field(..., description="Total cost/effort for this path")
+    expected_value: float = Field(..., description="Expected value/benefit of this path")
+    risk_score: float = Field(..., ge=0.0, le=1.0, description="Risk score for this path")
+    feasibility_score: float = Field(..., ge=0.0, le=1.0, description="Feasibility assessment score")
+    combined_score: float = Field(..., description="Combined heuristic score")
+    constraint_satisfaction_score: float = Field(..., ge=0.0, le=1.0, description="Overall constraint satisfaction")
+    path_status: str = Field(..., description="Status of this path")
+    exploration_time: float = Field(..., description="Time spent exploring this path in seconds")
+    created_by_agent: str = Field(..., description="Agent that created this search path")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Path creation timestamp")
 
 
-# ============================================================================
-# PERFORMANCE METRICS
-# ============================================================================
-
-class PerformanceMetrics(BaseModel):
-    """Performance metrics for monitoring"""
-    metric_id: str = Field(..., description="Metric identifier")
-    agent: str = Field(..., description="Agent being measured")
-
-    # Timing metrics
-    response_time_ms: float = Field(..., description="Response time in milliseconds")
-    processing_time_ms: float = Field(..., description="Processing time in milliseconds")
-
-    # Quality metrics
-    success_rate: float = Field(..., description="Success rate 0-1")
-    error_rate: float = Field(..., description="Error rate 0-1")
-
-    # Resource metrics
-    memory_usage_mb: Optional[float] = Field(None, description="Memory usage in MB")
-    api_calls_made: Optional[int] = Field(None, description="Number of API calls")
-
-    # Metadata
-    timestamp: datetime = Field(default_factory=datetime.now)
-    correlation_id: Optional[str] = Field(None)
+class ReasoningTrace(BaseModel):
+    """Detailed reasoning trace with visualization metadata for comprehensive transparency"""
+    trace_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique trace identifier")
+    session_id: str = Field(..., description="Session ID this trace belongs to")
+    agent_id: str = Field(..., description="ID of the agent that generated this trace")
+    operation_type: str = Field(..., description="Type of operation being traced")
+    start_time: datetime = Field(default_factory=datetime.utcnow, description="Trace start timestamp")
+    end_time: Optional[datetime] = Field(None, description="Trace completion timestamp")
+    total_duration: Optional[float] = Field(None, description="Total trace duration in seconds")
+    decision_points: List[DecisionPoint] = Field(default_factory=list, description="All decision points in the trace")
+    search_paths: List[str] = Field(default_factory=list, description="IDs of search paths explored")
+    final_decision: str = Field(..., description="Final decision or recommendation")
+    decision_rationale: str = Field(..., description="Comprehensive rationale for the final decision")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in the final decision")
+    performance_metrics: PerformanceMetrics = Field(..., description="Performance metrics for this trace")
+    correlation_id: str = Field(..., description="Correlation ID for tracking related traces")
 
 
-# ============================================================================
-# EXPORTS
-# ============================================================================
+# Risk and Compliance Models
+class RiskLevel(str, Enum):
+    """Risk tolerance levels"""
+    CONSERVATIVE = "conservative"
+    MODERATE_CONSERVATIVE = "moderate_conservative"
+    MODERATE = "moderate"
+    MODERATE_AGGRESSIVE = "moderate_aggressive"
+    AGGRESSIVE = "aggressive"
 
-__all__ = [
-    # Enums
-    'MarketEventType',
-    'SeverityLevel',
-    'LifeEventType',
-    'PlanStatus',
-    'RiskTolerance',
 
-    # Market models
-    'MarketData',
-    'MarketContext',
+class ComplianceLevel(str, Enum):
+    """Compliance status levels"""
+    COMPLIANT = "compliant"
+    NON_COMPLIANT = "non_compliant"
+    PARTIALLY_COMPLIANT = "partially_compliant"
+    UNDER_REVIEW = "under_review"
+    EXEMPT = "exempt"
 
-    # Trigger models
-    'TriggerEvent',
 
-    # Financial models
-    'TaxContext',
-    'RegulatoryRequirement',
-    'RiskProfile',
-    'FinancialState',
-    'Constraint',
+class RiskProfile(BaseModel):
+    """Comprehensive risk profile with behavioral analysis and stress testing"""
+    profile_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique risk profile identifier")
+    user_id: str = Field(..., description="User identifier")
+    assessment_date: datetime = Field(default_factory=datetime.utcnow, description="Date of risk assessment")
+    overall_risk_tolerance: RiskLevel = Field(..., description="Overall risk tolerance level")
+    risk_capacity: float = Field(..., ge=0.0, le=1.0, description="Financial capacity to take risk")
+    risk_perception: float = Field(..., ge=0.0, le=1.0, description="User's perception of risk")
+    risk_composure: float = Field(..., ge=0.0, le=1.0, description="Ability to stay calm during volatility")
+    investment_horizon: int = Field(..., gt=0, description="Investment time horizon in months")
+    liquidity_needs: Dict[str, float] = Field(..., description="Liquidity needs by time period")
+    volatility_comfort: float = Field(..., ge=0.0, le=1.0, description="Comfort with portfolio volatility")
+    loss_tolerance: float = Field(..., ge=0.0, le=1.0, description="Maximum acceptable loss percentage")
+    investment_experience: str = Field(..., description="Level of investment experience")
+    financial_knowledge: float = Field(..., ge=0.0, le=1.0, description="Self-assessed financial knowledge")
+    decision_making_style: str = Field(..., description="Decision-making style")
+    primary_goals: List[str] = Field(..., description="Primary financial goals")
+    goal_priorities: Dict[str, int] = Field(..., description="Priority ranking of goals")
+    assessment_method: str = Field(..., description="Method used for risk assessment")
+    next_review_date: datetime = Field(..., description="Date for next risk profile review")
 
-    # Planning models
-    'PlanStep',
-    'PlanRequest',
-    'FinancialPlan',
 
-    # Verification models
-    'VerificationReport',
-    'ComplianceStatus',
+class TaxContext(BaseModel):
+    """Comprehensive tax context with optimization opportunities and compliance tracking"""
+    context_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique tax context identifier")
+    user_id: str = Field(..., description="User identifier")
+    tax_year: int = Field(..., description="Tax year this context applies to")
+    filing_status: str = Field(..., description="Tax filing status")
+    number_of_dependents: int = Field(default=0, ge=0, description="Number of dependents")
+    state_of_residence: str = Field(..., description="State of residence for tax purposes")
+    estimated_agi: Decimal = Field(..., ge=0, description="Estimated Adjusted Gross Income")
+    marginal_tax_rate: float = Field(..., ge=0.0, le=1.0, description="Marginal federal tax rate")
+    effective_tax_rate: float = Field(..., ge=0.0, le=1.0, description="Effective federal tax rate")
+    state_tax_rate: float = Field(default=0.0, ge=0.0, le=1.0, description="State tax rate")
+    standard_deduction: Decimal = Field(..., ge=0, description="Standard deduction amount")
+    estimated_tax_liability: Decimal = Field(..., description="Estimated total tax liability")
+    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
 
-    # Communication models
-    'AgentMessage',
-    'ExecutionLog',
 
-    # Reasoning models
-    'ReasoningTrace',
-    'SearchPath',
+class RegulatoryRequirement(BaseModel):
+    """Regulatory requirement with compliance tracking and impact assessment"""
+    requirement_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique requirement identifier")
+    regulation_name: str = Field(..., description="Name of the regulation")
+    regulatory_body: str = Field(..., description="Regulatory body that issued the requirement")
+    title: str = Field(..., description="Title of the regulatory requirement")
+    description: str = Field(..., description="Detailed description of the requirement")
+    category: str = Field(..., description="Category of regulation")
+    applicable_entities: List[str] = Field(..., description="Types of entities this requirement applies to")
+    compliance_level: ComplianceLevel = Field(..., description="Required compliance level")
+    mandatory_actions: List[str] = Field(..., description="Mandatory actions for compliance")
+    effective_date: datetime = Field(..., description="Date when requirement becomes effective")
+    business_impact: str = Field(..., description="Assessment of business impact")
+    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update to this requirement")
 
-    # Metrics
-    'PerformanceMetrics',
-]
+
+class ComplianceStatus(BaseModel):
+    """Comprehensive compliance status tracking with audit trail and remediation plans"""
+    status_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique status identifier")
+    entity_id: str = Field(..., description="ID of entity being assessed for compliance")
+    requirement_id: str = Field(..., description="ID of regulatory requirement")
+    compliance_level: ComplianceLevel = Field(..., description="Current compliance level")
+    assessment_date: datetime = Field(default_factory=datetime.utcnow, description="Date of compliance assessment")
+    assessor_id: str = Field(..., description="ID of agent or person who performed assessment")
+    compliance_risk_score: float = Field(..., ge=0.0, le=1.0, description="Overall compliance risk score")
+    remediation_required: bool = Field(default=False, description="Whether remediation is required")
+    next_review_date: datetime = Field(..., description="Date for next compliance review")
+    monitoring_frequency: str = Field(..., description="Frequency of ongoing monitoring")
+    confidence_score: float = Field(default=1.0, ge=0.0, le=1.0, description="Confidence in compliance assessment")
+    last_updated: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+
+
+class AuditTrail(BaseModel):
+    """Comprehensive audit trail for compliance and debugging purposes"""
+    audit_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique audit entry identifier")
+    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Audit entry timestamp")
+    user_id: Optional[str] = Field(None, description="User ID associated with this audit entry")
+    session_id: str = Field(..., description="Session ID for tracking user interactions")
+    agent_id: str = Field(..., description="ID of agent that performed the action")
+    correlation_id: str = Field(..., description="Correlation ID for tracking related actions")
+    action_type: str = Field(..., description="Type of action performed")
+    action_description: str = Field(..., description="Detailed description of the action")
+    authorization_level: str = Field(..., description="Authorization level required/used")
+    action_result: str = Field(..., description="Result of the action")
+    environment: str = Field(default="production", description="Environment where action occurred")
+    system_version: str = Field(default="1.0.0", description="System version at time of action")
