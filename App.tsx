@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
-import { ArchitectureView } from './components/ArchitectureView';
-import { ReasonGraphView } from './components/ReasonGraphView';
-import { DashboardView } from './components/DashboardView';
-import { LiveDemoView } from './components/LiveDemoView';
+import { ArchitectureView } from './views/ArchitectureView';
+import { ReasonGraphView } from './views/ReasonGraphView';
+import { DashboardView } from './views/DashboardView';
+import { LiveDemoView } from './views/LiveDemoView';
 import { Activity, GitBranch, LayoutDashboard, Play } from 'lucide-react';
 
 export default function App() {
