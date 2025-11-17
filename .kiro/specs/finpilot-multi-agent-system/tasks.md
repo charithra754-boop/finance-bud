@@ -7,7 +7,10 @@
 
 This implementation plan is designed for 4 developers working independently on separate systems, followed by integration. Each system can be developed and tested in isolation before final integration.
 
-**Enhanced Team Assignment & Tech Stack:**
+\*\*Enhanced Team Assignment & T
+
+ech Stack:\*\*
+
 - **Person A (Architect/Orchestrator Lead)**: Enhanced Orchestration Agent (OA) + Advanced Data Contracts + Execution Agent (EA) - Python (FastAPI/LangChain), Pydantic models, circuit breakers, workflow management
 - **Person B (Data & Intelligence Engineer)**: Advanced Information Retrieval Agent (IRA) + Multi-Source Financial APIs + Market Intelligence - Python, REST API (Barchart/Massive/Alpha Vantage), pandas, predictive analytics, scenario simulation
 - **Person C (Planning & Reasoning Engineer)**: Enhanced Planning Agent (PA) + Advanced Guided Search Module (GSM) + ToS Engine - Python, advanced graph algorithms, machine learning optimization, constraint solving, multi-path planning
@@ -36,11 +39,10 @@ This implementation plan is designed for 4 developers working independently on s
 ```
 
 ## Phase 1: Setup & Ground Rules (Day 1)
+
 **Owner**: All (collaboration phase)
 
 - [-] 1. Establish project foundation and data contracts
-
-
 
   - Create GitHub repo with branch structure: main → integration branch (protected)
   - Set up individual branches: personA-orchestrator, personB-IRA, personC-PA, personD-VA
@@ -48,7 +50,9 @@ This implementation plan is designed for 4 developers working independently on s
   - Create shared constants.py and logger.py utilities
   - _Requirements: 9.1, 9.2, 9.4_
 
-- [ ] 2. Define comprehensive Pydantic data contracts
+- [x] 2. Define comprehensive Pydantic data contracts
+
+
   - Create enhanced PlanRequest, PlanStep, VerificationReport base models with correlation IDs and performance metrics
   - Define comprehensive MarketData, TriggerEvent, AgentMessage schemas with predictive indicators and severity assessment
   - Implement advanced FinancialState, Constraint, ExecutionLog models with regulatory compliance and tax context
@@ -56,8 +60,13 @@ This implementation plan is designed for 4 developers working independently on s
   - Create RiskProfile, TaxContext, RegulatoryRequirement, and ComplianceStatus models
   - Document all schemas with comprehensive docstrings for agent tool identification and API documentation
   - _Requirements: 6.1, 6.2, 9.1, 9.3, 28.1, 28.4, 28.5_
+-
 
-- [ ] 3. Set up development environment and mock interfaces
+- [x] 3. Set up development environment and mock interfaces
+
+
+
+
   - Create mock agent interfaces for independent development
   - Set up testing frameworks and CI/CD pipeline structure
   - Define API endpoint contracts and documentation standards
@@ -65,11 +74,13 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 9.4, 9.5, 11.2_
 
 ## Phase 2: Independent Development (Day 2-4)
+
 **Each member develops and tests their module independently, mocking other agents as needed**
 
 ## Person A — Orchestration Agent (OA) & Communication Protocols
 
 - [ ] 4. Set up agent communication infrastructure
+
   - Create base agent class with structured communication protocols
   - Implement message routing and correlation ID system using async events or REST endpoints
   - Create agent registry and discovery mechanism
@@ -77,6 +88,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 6.1, 6.2, 6.3, 4.1_
 
 - [ ] 5. Implement Enhanced Orchestration Agent (OA) core functionality
+
   - Build sophisticated mission control logic for complex workflow coordination with circuit breakers
   - Implement advanced user goal parsing for multi-constraint scenarios (e.g., "save ₹20L while supporting elderly parents")
   - Create intelligent task delegation system with priority handling and performance monitoring
@@ -86,6 +98,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 1.1, 2.2, 4.1, 4.3, 29.1, 29.2, 29.4, 30.1, 30.3, 30.5_
 
 - [ ] 6. Create trigger simulation and workflow management
+
   - Implement trigger simulation with dummy JSONs for "life event" and "market event"
   - Build workflow engine for coordinating multi-agent processes
   - Create session management for tracking user interactions
@@ -93,6 +106,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 2.1, 2.2, 10.2_
 
 - [ ] 7. Build Enhanced Execution Agent (EA) integration
+
   - Create comprehensive financial ledger management system with detailed transaction logging
   - Build advanced symbolic action execution engine with tax optimization and regulatory compliance
   - Implement sophisticated transaction logging and rollback capability with audit trails
@@ -110,6 +124,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 6.1, 6.2, 6.5, 11.1, 11.2_
 
 **Deliverables for Person A:**
+
 - Working orchestrator.py file
 - Execution agent (EA) implementation
 - Docstring of input/output contracts
@@ -119,14 +134,17 @@ This implementation plan is designed for 4 developers working independently on s
 ## Person B — Information Retrieval Agent (IRA) & Financial APIs
 
 - [ ] 9. Set up external API integration framework
+
   - Create market data API connectors (Barchart API, Massive API, Alpha Vantage)
-  - Implement rate limiting and failover mechanisms for API calls
+  - Implement rate limi
+    ting and failover mechanisms for API calls
   - Build data caching layer with TTL management using Redis
   - Add API authentication and security handling with key rotation
   - Create local mock API fallback for offline testing
   - _Requirements: 5.1, 5.2, 4.4, 12.1_
 
 - [ ] 10. Implement Advanced Information Retrieval Agent (IRA) core functionality
+
   - Build comprehensive real-time market data fetching system with multi-source integration (Barchart, Massive, Alpha Vantage)
   - Create sophisticated volatility monitoring and threshold detection algorithms with predictive capabilities
   - Implement enhanced RAG system for financial knowledge retrieval with regulatory updates
@@ -137,6 +155,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 5.1, 5.2, 5.3, 2.1, 2.2, 31.1, 31.2, 31.4, 31.5, 43.5_
 
 - [ ] 11. Create advanced market trigger detection and monitoring system
+
   - Implement sophisticated volatility spike detection algorithms with machine learning pattern recognition
   - Build comprehensive market event classification system (crash, recovery, volatility spike, sector rotation, regulatory changes)
   - Create intelligent trigger severity assessment logic with confidence intervals (critical, high, medium, low)
@@ -147,6 +166,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 2.1, 2.2, 5.2, 33.1, 33.2, 33.3, 33.4, 33.5_
 
 - [ ] 12. Build comprehensive market data pipeline
+
   - Create caching + throttling logic for frequent queries
   - Implement data preprocessing and normalization
   - Build market sentiment analysis from news feeds
@@ -165,6 +185,7 @@ This implementation plan is designed for 4 developers working independently on s
   - _Requirements: 5.1, 5.2, 11.1, 11.3, 32.1, 32.2, 32.3, 32.4, 32.5_
 
 **Deliverables for Person B:**
+
 - retriever.py with real + mock modes
 - API key configuration file and security setup
 - Documentation of all endpoints and data schemas
@@ -220,6 +241,7 @@ This implementation plan is designed for 4 developers working independently on s
 - _Requirements: 7.1, 7.2, 8.1, 8.2, 11.1, 11.3_
 
 **Deliverables for Person C:**
+
 - planner.py implementing GSM logic with ToS
 - JSON logs of ToS tree exploration
 - Test cases for multi-step planning scenarios
@@ -277,6 +299,7 @@ This implementation plan is designed for 4 developers working independently on s
 - _Requirements: 11.1, 11.4, 12.4_
 
 **Deliverables for Person D:**
+
 - verifier.py with CMVL implementation
 - React visualization (/frontend/reason_graph/)
 - JSON ↔ visualization mapping module
@@ -284,6 +307,7 @@ This implementation plan is designed for 4 developers working independently on s
 - Comprehensive verification and visualization test suite
 
 ## Phase 3: Internal Testing & Mock Integration (Day 5)
+
 **Owner**: All
 
 - [ ] 24. Create individual module testing and validation
@@ -302,6 +326,7 @@ This implementation plan is designed for 4 developers working independently on s
 - _Requirements: 11.4, 10.2_
 
 ## Phase 4: Final Integration & Merging (Day 6-7)
+
 **Owner**: All — led by Person A
 
 - [ ] 26. Sequential system integration
@@ -350,6 +375,7 @@ This implementation plan is designed for 4 developers working independently on s
 - _Requirements: All requirements, 11.4, 41.1, 41.2, 41.4, 41.5, 45.1, 45.3, 45.4, 45.5_
 
 ## Phase 5: Demo Preparation & Final Submission (Day 8)
+
 **Owner**: Person D (UI) + Person A (demo script)
 
 - [ ] 31. Create demonstration scenarios and content
@@ -390,6 +416,7 @@ This implementation plan is designed for 4 developers working independently on s
 - _Requirements: 10.2, 10.5, 42.1, 42.3, 42.4, 42.5, 43.1, 43.2, 44.4_
 
 ## Phase 6: Advanced Production Features (Optional Enhancement Phase)
+
 **Owner**: All - Advanced feature implementation for production readiness
 
 - [ ] 35. Implement advanced regulatory compliance and tax optimization
@@ -435,6 +462,7 @@ This implementation plan is designed for 4 developers working independently on s
 ## Integration Safety Tips & Development Guidelines
 
 ### Parallel Development Strategy
+
 1. Use Pydantic schemas as strict data contracts - no deviation allowed
 2. Mock others' outputs early — don't wait for full integration
 3. Each agent logs input → process → output in JSON format
@@ -445,6 +473,7 @@ This implementation plan is designed for 4 developers working independently on s
 8. Integration testing begins once all systems reach MVP status
 
 ### Testing Requirements
+
 - Each system must have 80%+ unit test coverage
 - Integration tests required for all external interfaces
 - Performance benchmarks established for critical paths
@@ -453,6 +482,7 @@ This implementation plan is designed for 4 developers working independently on s
 - End-to-end scenario testing for all demo cases
 
 ### Documentation Standards
+
 - All APIs documented with OpenAPI/Swagger
 - Agent interfaces documented with clear data contracts
 - Database schema documented with relationships
@@ -461,6 +491,7 @@ This implementation plan is designed for 4 developers working independently on s
 - JSON schema documentation for all inter-agent messages
 
 ### Quality Gates
+
 - Code review required for all changes
 - Automated testing must pass before integration
 - Performance benchmarks must be met
@@ -471,6 +502,7 @@ This implementation plan is designed for 4 developers working independently on s
 ## Success Metrics & Deliverables Summary
 
 ### Enhanced Technical Metrics
+
 - System response time < 1 second for simple planning requests, < 3 seconds for complex multi-constraint scenarios
 - 99.95% uptime for core services with intelligent failover and recovery
 - Market data latency < 200ms with predictive pre-loading and intelligent caching
@@ -481,6 +513,7 @@ This implementation plan is designed for 4 developers working independently on s
 - Tax optimization effectiveness > 90% compared to baseline strategies
 
 ### Enhanced Functional Metrics
+
 - Constraint satisfaction rate > 98% with intelligent constraint relaxation when needed
 - User goal completion rate > 95% with sophisticated multi-path planning
 - Complex demo scenarios execute flawlessly under concurrent trigger conditions
@@ -491,12 +524,14 @@ This implementation plan is designed for 4 developers working independently on s
 - User satisfaction > 90% based on usability testing and feedback analysis
 
 ### Enhanced Final Deliverables by Person
+
 **Person A**: Enhanced orchestrator.py with circuit breakers, advanced execution agent with tax optimization, sophisticated communication framework with performance monitoring, comprehensive workflow logs with audit trails
 **Person B**: Advanced retriever.py with multi-source integration, comprehensive market data pipeline with predictive analytics, robust API integrations with intelligent failover, sophisticated trigger detection with correlation analysis
 **Person C**: Enhanced planner.py with machine learning optimization, advanced GSM/ToS implementation with constraint solving, sophisticated planning algorithms with multi-path optimization, performance-optimized search with convergence detection
 **Person D**: Advanced verifier.py with regulatory compliance, sophisticated CMVL system with predictive monitoring, comprehensive ReasonGraph UI with interactive exploration, complex demo scenarios with concurrent trigger handling
 
 ### Comprehensive Integration Deliverables
+
 - Complete sophisticated VP-MAS system with production-ready features
 - Advanced interactive ReasonGraph visualization with real-time updates and exploration capabilities
 - Comprehensive live demo with complex market trigger simulation and concurrent event handling
@@ -510,10 +545,10 @@ This implementation plan is designed for 4 developers working independently on s
 
 ## Final Structure Summary
 
-| Phase | Timeline | Main Owners | Key Deliverable |
-|-------|----------|-------------|-----------------|
-| 1. Setup | Day 1 | All | Repo + schemas + contracts |
-| 2. Independent Dev | Day 2–4 | A, B, C, D | 4 independent modules |
-| 3. Mock Test | Day 5 | All | Local test notebooks |
-| 4. Integration | Day 6–7 | A (lead) | End-to-end working system |
-| 5. Demo + Submission | Day 8 | D + A | Polished visual demo |
+| Phase                | Timeline | Main Owners | Key Deliverable            |
+| -------------------- | -------- | ----------- | -------------------------- |
+| 1. Setup             | Day 1    | All         | Repo + schemas + contracts |
+| 2. Independent Dev   | Day 2–4  | A, B, C, D  | 4 independent modules      |
+| 3. Mock Test         | Day 5    | All         | Local test notebooks       |
+| 4. Integration       | Day 6–7  | A (lead)    | End-to-end working system  |
+| 5. Demo + Submission | Day 8    | D + A       | Polished visual demo       |
