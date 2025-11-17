@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+@layer theme {
+  :root {
+    --color-paper: #FAF9F6;
+    --color-ink: #0A1128;
+    --color-blueprint: #1B4965;
+    --color-cyan: #00D9FF;
+    --color-vermillion: #E63946;
+    --color-emerald: #06D6A0;
+    --color-amber: #FFB703;
+    --color-grid: #CAE9FF;
+    --color-shadow: rgba(10, 17, 40, 0.15);
+    
+    --font-display: 'Crimson Pro', serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-code: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    font-family: var(--font-mono);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+  }
+
+  h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  code, pre {
+    font-family: var(--font-code);
+  }
+}
+
+/* Blueprint Grid Background */
+.blueprint-grid {
+  background-color: var(--color-paper);
+  background-image: 
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+  position: relative;
+}
+
+.blueprint-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(250, 249, 246, 0.8) 100%);
+  pointer-events: none;
+}
+
+/* Circuit Line Animation */
+@keyframes circuit-flow {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.circuit-line {
+  stroke-dasharray: 10 5;
+  animation: circuit-flow 20s linear infinite;
+}
+
+/* Technical Border */
+.tech-border {
+  position: relative;
+  border: 2px solid var(--color-ink);
+}
+
+.tech-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--color-cyan), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.tech-border:hover::before {
+  opacity: 0.2;
+}
+
+/* Terminal Effect */
+.terminal-text {
+  font-family: var(--font-code);
+  background: var(--color-ink);
+  color: var(--color-cyan);
+  padding: 1rem;
+  border: 2px solid var(--color-cyan);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+}
+
+/* Data Label */
+.data-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-blueprint);
+  font-weight: 600;
+}
+
+/* Staggered Fade In */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-1 { animation: fadeInUp 0.6s ease-out 0.1s both; }
+.stagger-2 { animation: fadeInUp 0.6s ease-out 0.2s both; }
+.stagger-3 { animation: fadeInUp 0.6s ease-out 0.3s both; }
+.stagger-4 { animation: fadeInUp 0.6s ease-out 0.4s both; }
+.stagger-5 { animation: fadeInUp 0.6s ease-out 0.5s both; }
+.stagger-6 { animation: fadeInUp 0.6s ease-out 0.6s both; }
+
+/* Blueprint Corner Markers */
+.blueprint-corners {
+  position: relative;
+}
+
+.blueprint-corners::before,
+.blueprint-corners::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-blueprint);
+}
+
+.blueprint-corners::before {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.blueprint-corners::after {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+}
+
+/* Pulse Indicator */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--color-cyan), 0 0 10px var(--color-cyan);
+  }
+  50% {
+    box-shadow: 0 0 10px var(--color-cyan), 0 0 20px var(--color-cyan), 0 0 30px var(--color-cyan);
+  }
+}
+
+.pulse-indicator {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Angular Card */
+.angular-card {
+  clip-path: polygon(
+    0 8px,
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%
+  );
+}
