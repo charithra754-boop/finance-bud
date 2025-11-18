@@ -12,7 +12,9 @@
   - Add contamination parameter validation for sklearn compatibility
   - _Requirements: 3.1, 3.2, 3.3, 3.5_
 
-- [-] 2. Fix portfolio prediction response structure
+- [x] 2. Fix portfolio prediction response structure
+
+
 
 
 
@@ -32,15 +34,20 @@
     - Add response validation before returning results
     - _Requirements: 1.1, 1.3, 1.4_
 
-  - [-] 2.2 Update portfolio prediction methods to use standardized response format
+  - [x] 2.2 Update portfolio prediction methods to use standardized response format
+
 
     - Modify predict_portfolio_performance method to use ResponseFormatter
     - Ensure consistent structure across different timeframes and simulation counts
     - Fix test failures in TestPortfolioPerformancePrediction and TestPerformanceAndStress
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3. Enhance message processing validation
-  - [ ] 3.1 Implement MessageValidator class for Agent_Message handling
+- [-] 3. Enhance message processing validation
+
+
+
+  - [-] 3.1 Implement MessageValidator class for Agent_Message handling
+
     - Create proper AgentMessage validation with all required Pydantic fields
     - Add default field population for "payload" and "trace_id" fields
     - Implement error response generation for validation failures
