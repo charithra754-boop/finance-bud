@@ -161,15 +161,6 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
-### Kiro AI Development
-```bash
-# View current specs
-ls .kiro/specs/
-
-# Execute spec tasks (through Kiro IDE)
-# Open .kiro/specs/*/tasks.md and click "Start task"
-```
-
 ## 🌐 API Endpoints
 
 ### Core Agent Endpoints
@@ -334,4 +325,5 @@ Link: https://ecell-production.up.railway.app/
 🎥 Project Demo Video
 Link: https://youtu.be/hKzpLhGA75k
   
+
 
