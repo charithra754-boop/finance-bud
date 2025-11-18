@@ -13,7 +13,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union, Literal
 from enum import Enum
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator, model_validator, ValidationInfo
 from uuid import uuid4
 
 # Supabase integration
@@ -134,7 +134,8 @@ class EnhancedPlanRequest(BaseModel):
     priority: Priority = Field(default=Priority.MEDIUM, description="Request priority")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Request creation timestamp")
     
-    @validator('time_horizon')
+    @field_validator('time_horizon')
+    @classmethod
     def validate_time_horizon(cls, v):
         if v > 600:  # 50 years
             raise ValueError('Time horizon cannot exceed 600 months (50 years)')
@@ -248,25 +249,21 @@ class FinancialState(BaseModel):
     as_of_date: datetime = Field(default_factory=datetime.utcnow, description="Date of this financial snapshot")
     total_assets: Decimal = Field(..., ge=0, description="Total asset value")
     total_liabilities: Decimal = Field(..., ge=0, description="Total liability value")
-    net_worth: Decimal = Field(..., description="Net worth (assets - liabilities)")
+    net_worth: Optional[Decimal] = Field(None, description="Net worth (assets - liabilities)")
     monthly_income: Decimal = Field(..., ge=0, description="Monthly gross income")
     monthly_expenses: Decimal = Field(..., ge=0, description="Monthly expenses")
-    monthly_cash_flow: Decimal = Field(..., description="Monthly net cash flow")
+    monthly_cash_flow: Optional[Decimal] = Field(None, description="Monthly net cash flow")
     risk_tolerance: str = Field(..., description="Risk tolerance level")
     tax_filing_status: str = Field(..., description="Tax filing status")
     estimated_tax_rate: float = Field(..., ge=0.0, le=1.0, description="Estimated effective tax rate")
-    
-    @validator('net_worth', always=True)
-    def calculate_net_worth(cls, v, values):
-        if 'total_assets' in values and 'total_liabilities' in values:
-            return values['total_assets'] - values['total_liabilities']
-        return v
-    
-    @validator('monthly_cash_flow', always=True)
-    def calculate_cash_flow(cls, v, values):
-        if 'monthly_income' in values and 'monthly_expenses' in values:
-            return values['monthly_income'] - values['monthly_expenses']
-        return v
+
+    @model_validator(mode='after')
+    def calculate_derived_fields(self):
+        if self.net_worth is None:
+            self.net_worth = self.total_assets - self.total_liabilities
+        if self.monthly_cash_flow is None:
+            self.monthly_cash_flow = self.monthly_income - self.monthly_expenses
+        return self
 
 
 class Constraint(BaseModel):

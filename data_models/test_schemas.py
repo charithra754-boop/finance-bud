@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
-from schemas import (
+from .schemas import (
     AgentMessage, MessageType, Priority,
     EnhancedPlanRequest, PlanStep, VerificationReport, VerificationStatus,
     MarketData, TriggerEvent, MarketEventType, SeverityLevel,
