@@ -141,3 +141,6 @@ test-results/
 *.trace.zip
 screenshots/
 .vercel
+
+# Claude Code instructions
+CLAUDE.md
