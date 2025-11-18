@@ -74,6 +74,7 @@ benchmark.json
 .env.development.local
 .env.test.local
 .env.production.local
+api_config.json
 
 # Temporary files
 *.tmp
@@ -141,3 +142,7 @@ test-results/
 *.trace.zip
 screenshots/
 .vercel
+
+# Claude Code
+.claude/
+CLAUDE.md

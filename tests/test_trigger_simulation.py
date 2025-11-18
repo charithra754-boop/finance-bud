@@ -253,8 +253,7 @@ class TriggerSimulator:
         }
  
 
-class 
-TestTriggerSimulation:
+class TestTriggerSimulation:
     """Test suite for trigger simulation and CMVL workflows"""
     
     @pytest.fixture
