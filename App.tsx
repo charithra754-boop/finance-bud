@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { ThemeToggle } from './components/ThemeToggle';
 import { ArchitectureView } from './views/ArchitectureView';
 import { ReasonGraphView } from './views/ReasonGraphView';
 import { DashboardView } from './views/DashboardView';
@@ -15,12 +16,13 @@ export default function App() {
         {/* Header with Technical Design */}
         <div className="mb-12 relative stagger-1">
           <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-[var(--color-cyan)] via-[var(--color-blueprint)] to-transparent"></div>
-          
+
           <div className="space-y-3">
             <div className="flex items-baseline gap-4">
               <div className="data-label">SYSTEM_ID: VP-MAS-001</div>
               <div className="h-px flex-1 bg-[var(--color-grid)]"></div>
               <div className="data-label">STATUS: ACTIVE</div>
+              <ThemeToggle />
             </div>
             
             <h1 className="text-[var(--color-ink)] leading-none">

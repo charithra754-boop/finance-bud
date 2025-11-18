@@ -1,0 +1,24 @@
+# FinPilot MVP - Minimal Requirements for Quick Deployment
+# Only the essentials needed to run the API
+
+# Web Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.31.0
+
+# Data validation
+pydantic>=2.0.0
+pydantic[email]>=2.0.0
+
+# Async HTTP
+aiohttp>=3.9.5
+httpx>=0.24.0
+
+# Database (Supabase)
+supabase>=2.0.0
+
+# Security
+pyjwt>=2.8.0
+cryptography>=43.0.1
+
+# Optional but recommended
+python-dotenv>=1.0.0
