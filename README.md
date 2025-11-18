@@ -325,7 +325,13 @@ Notes:
 MIT License - see [LICENSE](LICENSE) file for details
 
 ---
+🌐 Frontend Deployment
+Link: https://finance-bud.vercel.app/
 
-**Built with Kiro AI** - Leveraging AI-assisted development for sophisticated financial planning systems
+⚙️ Backend Deployment
+Link: https://ecell-production.up.railway.app/
 
+🎥 Project Demo Video
+Link: https://youtu.be/hKzpLhGA75k
   
+
