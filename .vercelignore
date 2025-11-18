@@ -1,0 +1,50 @@
+# Python Backend Files (deploy separately to Render/Railway)
+*.py
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# Python Dependencies
+requirements*.txt
+Pipfile
+Pipfile.lock
+poetry.lock
+pyproject.toml
+
+# Backend Config Files
+Procfile
+render.yaml
+railway.json
+fly.toml
+
+# Testing
+.pytest_cache/
+pytest.ini
+.coverage
+htmlcov/
+
+# Data & Models
+data_models/
+agents/
+services/
+api/
+
+# Backend-specific
+main.py
+check_model_usage.py
+test_*.py
+
+# Deployment docs (optional, but reduces size)
+*.md
+!README.md
+
+# Other
+.env
+.env.local
+*.log

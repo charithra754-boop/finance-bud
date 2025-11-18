@@ -1,0 +1,26 @@
+services:
+  # Frontend - React/Vite Static Site
+  - type: web
+    name: finpilot-frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+
+  # Backend - Python FastAPI
+  - type: web
+    name: finpilot-api
+    runtime: python
+    buildCommand: pip install -r requirements-minimal.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: PORT
+        value: 8000
