@@ -78,9 +78,14 @@ npm install
 
 **Terminal 1 - Backend:**
 ```bash
-python main.py
+# Option 1: Using Makefile (recommended)
+cd backend
+make run
 # API server: http://localhost:8000
 # API docs: http://localhost:8000/docs
+
+# Option 2: Direct Python command
+python main.py
 ```
 
 **Terminal 2 - Frontend:**
@@ -88,6 +93,8 @@ python main.py
 npm run dev
 # Development server: http://localhost:3000
 ```
+
+> **Tip:** Use `make dev` in the backend directory for a quick setup that installs dependencies and starts the server in one command!
 
 ### Your First Request
 
@@ -328,8 +335,49 @@ class AgentMessage(BaseModel):
 
 ### Backend Development
 
-#### Start Development Server
+#### Using Makefile (Recommended)
+
+The backend includes a comprehensive Makefile for easier development workflow:
+
 ```bash
+# First-time setup
+cd backend
+make setup              # Install dependencies and verify setup
+
+# Start the server
+make run                # Start development server with auto-reload
+make run-prod           # Start in production mode (no reload)
+
+# Quick start (install + run)
+make dev                # Install critical dependencies and start server
+```
+
+**Common Makefile Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all available commands |
+| `make dev` | Quick setup and run (install + start) |
+| `make install` | Install all dependencies |
+| `make install-quick` | Install only critical dependencies (faster) |
+| `make test` | Run all tests |
+| `make test-unit` | Run unit tests only |
+| `make test-integration` | Run integration tests only |
+| `make test-cov` | Run tests with coverage report |
+| `make clean` | Clean up cache and temporary files |
+| `make lint` | Run code linters |
+| `make format` | Auto-format code with black and isort |
+| `make check-deps` | Check if critical dependencies are installed |
+| `make debug-imports` | Check if main modules can be imported |
+
+See [backend/Makefile](backend/Makefile) for all available commands.
+
+#### Manual Setup
+
+If you prefer not to use Make:
+
+```bash
+# Start Development Server
 python main.py
 # API available at: http://localhost:8000
 # Interactive docs: http://localhost:8000/docs
@@ -857,6 +905,8 @@ See [docs/development/deployment.md](docs/development/deployment.md) for detaile
 ---
 
 ## 🔧 Troubleshooting
+
+> **Known Backend Issues**: See [backend/BACKEND_ISSUES.md](backend/BACKEND_ISSUES.md) for a complete list of documented backend issues and their fixes.
 
 ### Common Issues
 

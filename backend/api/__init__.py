@@ -8,12 +8,12 @@ Requirements: 9.4, 9.5
 """
 
 from .contracts import APIContracts
-from .documentation import APIDocumentationStandards
-from .endpoints import AgentEndpoints, endpoint_registry
+# from .documentation import APIDocumentationStandards
+# from .endpoints import AgentEndpoints, endpoint_registry
 
 __all__ = [
     'APIContracts',
-    'APIDocumentationStandards', 
-    'AgentEndpoints',
-    'endpoint_registry'
+    # 'APIDocumentationStandards',
+    # 'AgentEndpoints',
+    # 'endpoint_registry'
 ]
