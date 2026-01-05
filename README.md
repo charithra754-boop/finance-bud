@@ -1,4 +1,4 @@
-# FinPilot - Verifiable Planning Multi-Agent System
+# FinAgentPlan - Verifiable Planning Multi-Agent System
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
 ![Node](https://img.shields.io/badge/Node-18+-green.svg)
@@ -10,7 +10,7 @@
 
 <div align="center">
 
-**[🎮 Live Demo](https://finance-bud.vercel.app/)** •
+**[🎮 Live Demo](https://fin-agent-plan.vercel.app/)** •
 **[📺 Video Tour](https://youtu.be/hKzpLhGA75k)** •
 **[📚 Full Documentation](docs/)** •
 **[🔧 API Docs](https://ecell-production.up.railway.app/docs)**
@@ -63,11 +63,8 @@ Get FinPilot running locally in under 5 minutes.
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/finance-bud.git
-cd finance-bud
-
-# Install backend dependencies
+git clone https://github.com/yourusername/fin-agent-plan.git
+cd fin-agent-plan# Install backend dependencies
 pip install -r requirements.txt
 
 # Install frontend dependencies
@@ -118,9 +115,9 @@ Open http://localhost:3000 to interact with the UI.
 
 ---
 
-## 💡 What is FinPilot?
+## 💡 What is FinAgentPlan?
 
-FinPilot is a **Verifiable Planning Multi-Agent System (VP-MAS)** that provides intelligent, adaptive financial planning through natural language interactions. Unlike traditional financial planning tools, FinPilot uses a sophisticated multi-agent architecture to:
+FinAgentPlan is a **Verifiable Planning Multi-Agent System (VP-MAS)** that provides intelligent, adaptive financial planning through natural language interactions. Unlike traditional financial planning tools, FinAgentPlan uses a sophisticated multi-agent architecture to:
 
 - **Understand your goals** in natural language ("I want to retire at 60 with $2M")
 - **Generate optimal plans** using advanced algorithms (Guided Search Module, Thought of Search)
@@ -130,7 +127,7 @@ FinPilot is a **Verifiable Planning Multi-Agent System (VP-MAS)** that provides 
 
 **Why FinPilot?**
 
-| Feature | Traditional Tools | FinPilot |
+| Feature | Traditional Tools | FinAgentPlan |
 |---------|------------------|----------|
 | Goal Input | Forms & dropdowns | Natural language |
 | Planning | Static rules | AI-powered multi-agent system |
@@ -1138,7 +1135,7 @@ See [LICENSE](LICENSE) file for full details.
 
 <div align="center">
 
-**Built with ❤️ by the FinPilot Team**
+**Built with ❤️ by the FinAgentPlan Team**
 
 [🌐 Live Demo](https://finance-bud.vercel.app/) •
 [📚 Documentation](docs/) •

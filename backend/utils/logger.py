@@ -515,3 +515,25 @@ performance_logger = LoggingStandards.create_system_logger("performance")
 
 # Set up log directories on import
 LoggingStandards.setup_log_directories()
+
+
+def get_logger(name: str, level: str = "INFO") -> StructuredLogger:
+    """
+    Get a configured structured logger instance.
+    
+    Args:
+        name: Logger name (usually __name__ or component name)
+        level: Logging level (default: INFO)
+        
+    Returns:
+        StructuredLogger: Configured logger instance
+    """
+    # Create logger using standards
+    logger = StructuredLogger(name)
+    
+    # Set level if specified
+    if level:
+        log_level = getattr(logging, level.upper(), logging.INFO)
+        logger.logger.setLevel(log_level)
+        
+    return logger

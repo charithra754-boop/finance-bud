@@ -25,8 +25,13 @@ from api import (
     orchestration_endpoints,
     planning_endpoints,
     market_endpoints,
-    verification_endpoints
+    verification_endpoints,
+    auth_endpoints
 )
+from database import init_db
+from utils.auth import get_current_user
+from fastapi import Depends
+
 
 # Configure logging
 logging.basicConfig(
@@ -58,6 +63,11 @@ agents = {}
 async def lifespan(app: FastAPI):
     """Initialize agents on startup using AgentFactory"""
     logger.info("🚀 Starting FinPilot VP-MAS Backend...")
+    
+    # Initialize Database
+    await init_db()
+    logger.info("✅ Database initialized")
+
 
     # Create all agents using factory
     factory = get_agent_factory()
@@ -113,7 +123,12 @@ def inject_agents_into_routers():
 
 
 # Include all routers
-app.include_router(orchestration_endpoints.router)
+app.include_router(auth_endpoints.router)
+app.include_router(
+    orchestration_endpoints.router,
+    dependencies=[Depends(get_current_user)]
+)
+
 app.include_router(planning_endpoints.router)
 app.include_router(market_endpoints.router)
 app.include_router(verification_endpoints.router)
