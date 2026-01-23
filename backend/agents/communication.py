@@ -7,11 +7,14 @@ and coordination between agents with comprehensive monitoring.
 Requirements: 6.1, 6.2, 9.4
 """
 
+
 import asyncio
 import logging
+import json
 from datetime import datetime
 from typing import Dict, List, Optional, Callable
 from uuid import uuid4
+import redis.asyncio as redis
 
 from data_models.schemas import AgentMessage, MessageType, Priority
 
@@ -75,14 +78,14 @@ class MessageRouter:
             # Store message in history
             self.message_history.append(message)
             
-            # Handle broadcast messages
+            # Handle broadcast messages (Local only for now, Redis broadcast TODO)
             if message.target_agent_id is None:
                 return await self._broadcast_message(message)
             
-            # Route to specific agent
+            # Route to specific agent (Local lookup)
             target_agent = self.registry.get_agent(message.target_agent_id)
             if target_agent is None:
-                self.logger.error(f"Target agent {message.target_agent_id} not found")
+                self.logger.debug(f"Target agent {message.target_agent_id} not found locally")
                 return False
             
             await target_agent.receive_message(message)
@@ -175,58 +178,117 @@ class AgentCommunicationFramework:
     """
     Main communication framework that coordinates all agent interactions
     with monitoring, circuit breaking, and comprehensive logging.
+    Supports both local (in-memory) and distributed (Redis) communication.
     """
     
-    def __init__(self):
+    def __init__(self, redis_url: Optional[str] = None):
         self.registry = AgentRegistry()
         self.router = MessageRouter(self.registry)
         self.circuit_breakers: Dict[str, CircuitBreaker] = {}
         self.correlation_tracker: Dict[str, List[str]] = {}
         self.logger = logging.getLogger("finpilot.communication.framework")
         
+        # Redis configuration
+        self.redis_url = redis_url
+        self.redis_client = None
+        self.pubsub = None
+        self.listener_tasks = []
+        
         # Performance metrics
         self.total_messages = 0
         self.successful_messages = 0
         self.failed_messages = 0
         self.start_time = datetime.utcnow()
+
+    async def initialize(self):
+        """Initialize connections (Redis)"""
+        if self.redis_url:
+            try:
+                self.redis_client = redis.from_url(self.redis_url, decode_responses=True)
+                await self.redis_client.ping()
+                self.logger.info(f"Connected to Redis at {self.redis_url}")
+            except Exception as e:
+                self.logger.error(f"Failed to connect to Redis: {e}")
+                self.redis_client = None
     
-    def register_agent(self, agent: 'BaseAgent', capabilities: List[str] = None) -> None:
-        """Register an agent with the communication framework"""
+    async def register_agent(self, agent: 'BaseAgent', capabilities: List[str] = None) -> None:
+        """Register an agent with the communication framework and subscribe to Redis"""
         self.registry.register_agent(agent, capabilities)
         
         # Create circuit breaker for this agent
         self.circuit_breakers[agent.agent_id] = CircuitBreaker()
         
+        # Subscribe to Redis channel for this agent
+        if self.redis_client:
+            await self._start_redis_listener(agent)
+
         self.logger.info(f"Agent {agent.agent_id} registered with communication framework")
+
+    async def _start_redis_listener(self, agent: 'BaseAgent'):
+        """Start a background task to listen for Redis messages for this agent"""
+        async def listen():
+            pubsub = self.redis_client.pubsub()
+            channel = f"agent:{agent.agent_id}"
+            await pubsub.subscribe(channel)
+            self.logger.info(f"Subscribed to Redis channel: {channel}")
+            
+            try:
+                async for message in pubsub.listen():
+                    if message['type'] == 'message':
+                        try:
+                            data = json.loads(message['data'])
+                            agent_message = AgentMessage(**data)
+                            await agent.receive_message(agent_message)
+                        except Exception as e:
+                            self.logger.error(f"Error processing Redis message: {e}")
+            except asyncio.CancelledError:
+                pass
+            finally:
+                await pubsub.unsubscribe(channel)
+                await pubsub.close()
+
+        task = asyncio.create_task(listen())
+        self.listener_tasks.append(task)
     
     async def send_message(self, message: AgentMessage) -> bool:
-        """Send a message through the communication framework"""
+        """Send a message through the communication framework (Local or Redis)"""
         self.total_messages += 1
         
         try:
-            # Get circuit breaker for sender
-            circuit_breaker = self.circuit_breakers.get(message.agent_id)
-            if circuit_breaker:
-                success = await circuit_breaker.call(self.router.route_message, message)
-            else:
-                success = await self.router.route_message(message)
+            # Try local routing first (optimization)
+            if await self.router.route_message(message):
+                self._record_success(message)
+                return True
             
-            if success:
-                self.successful_messages += 1
+            # If local routing failed, try Redis
+            if self.redis_client and message.target_agent_id:
+                channel = f"agent:{message.target_agent_id}"
+                # Serialize using Pydantic's mode='json' to handle datetimes correctly
+                payload = message.model_dump_json()
+                await self.redis_client.publish(channel, payload)
                 
-                # Track correlation
-                if message.correlation_id not in self.correlation_tracker:
-                    self.correlation_tracker[message.correlation_id] = []
-                self.correlation_tracker[message.correlation_id].append(message.message_id)
-            else:
-                self.failed_messages += 1
+                self.logger.info(
+                    f"Published {message.message_type} to Redis channel {channel}",
+                    extra={'correlation_id': message.correlation_id}
+                )
+                self._record_success(message)
+                return True
             
-            return success
+            self.logger.warning(f"Message to {message.target_agent_id} could not be routed")
+            self.failed_messages += 1
+            return False
             
         except Exception as e:
             self.failed_messages += 1
             self.logger.error(f"Communication framework error: {str(e)}")
             return False
+
+    def _record_success(self, message: AgentMessage):
+        """Helper to record successful message metrics"""
+        self.successful_messages += 1
+        if message.correlation_id not in self.correlation_tracker:
+            self.correlation_tracker[message.correlation_id] = []
+        self.correlation_tracker[message.correlation_id].append(message.message_id)
     
     def create_message(
         self,
@@ -277,7 +339,8 @@ class AgentCommunicationFramework:
             "registered_agents": len(self.registry.agents),
             "agent_health": agent_health,
             "circuit_breakers": circuit_breaker_status,
-            "active_correlations": len(self.correlation_tracker)
+            "active_correlations": len(self.correlation_tracker),
+            "redis_connected": self.redis_client is not None
         }
     
     def get_correlation_trace(self, correlation_id: str) -> List[AgentMessage]:
@@ -287,6 +350,17 @@ class AgentCommunicationFramework:
     async def shutdown(self) -> None:
         """Gracefully shutdown the communication framework"""
         self.logger.info("Shutting down communication framework...")
+        
+        # Cancel listener tasks
+        for task in self.listener_tasks:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        
+        if self.redis_client:
+            await self.redis_client.close()
         
         # Stop all agents
         for agent in self.registry.get_all_agents().values():

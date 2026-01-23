@@ -6,6 +6,7 @@ Supports mock/real agent switching via configuration.
 """
 
 import logging
+import asyncio
 from typing import Dict, Any, Optional
 from enum import Enum
 
@@ -41,8 +42,10 @@ class AgentFactory:
         self.logger = logging.getLogger("finpilot.agent_factory")
         self._agents: Dict[str, Any] = {}
         self._initialized = False
+        from .communication import AgentCommunicationFramework
+        self.communication_framework: Optional[AgentCommunicationFramework] = None
 
-    def create_all_agents(self) -> Dict[str, Any]:
+    async def create_all_agents(self) -> Dict[str, Any]:
         """
         Create all agents based on configuration.
 
@@ -54,6 +57,11 @@ class AgentFactory:
             return self._agents
 
         self.logger.info(f"Initializing agents in {self.mode.value} mode...")
+        
+        # Initialize communication framework
+        from .communication import AgentCommunicationFramework
+        self.communication_framework = AgentCommunicationFramework(redis_url=settings.redis_url)
+        await self.communication_framework.initialize()
 
         try:
             # Create agents based on configuration
@@ -63,6 +71,12 @@ class AgentFactory:
             self._agents["verification"] = self._create_verification_agent()
             self._agents["execution"] = self._create_execution_agent()
             self._agents["conversational"] = self._create_conversational_agent()
+
+            # Register agents with communication framework
+            for name, agent in self._agents.items():
+                if agent:
+                    agent.set_communication_framework(self.communication_framework)
+                    await self.communication_framework.register_agent(agent)
 
             # Log initialization status
             status = self._get_agent_status()
@@ -244,16 +258,22 @@ class AgentFactory:
 
         return health_status
 
-    def shutdown(self):
+    async def shutdown(self):
         """Shutdown all agents gracefully"""
         self.logger.info("Shutting down all agents...")
+
+        if self.communication_framework:
+            await self.communication_framework.shutdown()
 
         for name, agent in self._agents.items():
             if agent is not None:
                 try:
                     # Call shutdown method if agent has one
                     if hasattr(agent, 'shutdown'):
-                        agent.shutdown()
+                        if asyncio.iscoroutinefunction(agent.shutdown):
+                            await agent.shutdown()
+                        else:
+                            agent.shutdown()
                         self.logger.info(f"✅ Shutdown {name} agent")
                 except Exception as e:
                     self.logger.error(f"❌ Error shutting down {name} agent: {e}")

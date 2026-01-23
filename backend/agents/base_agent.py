@@ -81,6 +81,10 @@ class BaseAgent(ABC):
         self.status = "stopped"
         self.logger.info(f"Agent {self.agent_id} stopped")
     
+    def set_communication_framework(self, framework: Any) -> None:
+        """Set the communication framework instance"""
+        self.communication_framework = framework
+    
     async def send_message(self, message: AgentMessage) -> None:
         """Send a message to another agent"""
         start_time = time.time()
@@ -98,8 +102,13 @@ class BaseAgent(ABC):
                 extra={'correlation_id': message.correlation_id}
             )
             
-            # Simulate message sending (in real implementation, this would use HTTP/WebSocket)
-            await asyncio.sleep(0.01)  # Simulate network latency
+            # Use communication framework if available
+            if hasattr(self, 'communication_framework') and self.communication_framework:
+                await self.communication_framework.send_message(message)
+            else:
+                # Simulate message sending (fallback for testing/mock)
+                self.logger.warning("No communication framework set, simulating message send")
+                await asyncio.sleep(0.01)
             
             execution_time = time.time() - start_time
             message.performance_metrics.execution_time = execution_time

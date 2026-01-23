@@ -273,7 +273,7 @@ class TestAgentCommunication:
         return AgentCommunicationFramework()
     
     @pytest.fixture
-    def test_agents(self, communication_framework):
+    async def test_agents(self, communication_framework):
         """Create and register test agents"""
         agents = {
             'orchestrator': MockOrchestrationAgent("test_oa_001"),
@@ -284,11 +284,11 @@ class TestAgentCommunication:
         }
         
         # Register agents with capabilities
-        communication_framework.register_agent(agents['orchestrator'], ['workflow_management', 'trigger_handling'])
-        communication_framework.register_agent(agents['planner'], ['financial_planning', 'strategy_generation'])
-        communication_framework.register_agent(agents['ira'], ['market_data', 'trigger_detection'])
-        communication_framework.register_agent(agents['verifier'], ['constraint_checking', 'compliance'])
-        communication_framework.register_agent(agents['executor'], ['transaction_execution', 'portfolio_management'])
+        await communication_framework.register_agent(agents['orchestrator'], ['workflow_management', 'trigger_handling'])
+        await communication_framework.register_agent(agents['planner'], ['financial_planning', 'strategy_generation'])
+        await communication_framework.register_agent(agents['ira'], ['market_data', 'trigger_detection'])
+        await communication_framework.register_agent(agents['verifier'], ['constraint_checking', 'compliance'])
+        await communication_framework.register_agent(agents['executor'], ['transaction_execution', 'portfolio_management'])
         
         return agents
     
@@ -371,10 +371,18 @@ class TestOrchestrationAgent:
     @pytest.fixture
     async def orchestration_agent(self):
         """Create orchestration agent for testing"""
+        # Initialize framework
+        framework = AgentCommunicationFramework()
+        await framework.initialize()
+        
         agent = OrchestrationAgent("test_orchestration_agent")
+        agent.set_communication_framework(framework)
+        await framework.register_agent(agent)
+        
         await agent.start()
         yield agent
         await agent.shutdown()
+        await framework.shutdown()
     
     @pytest.mark.asyncio
     async def test_orchestration_agent_initialization(self, orchestration_agent):

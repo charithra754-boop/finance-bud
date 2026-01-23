@@ -587,11 +587,11 @@ class OrchestrationAgent(BaseAgent):
         super().__init__(agent_id, "orchestration")
         
         # Initialize core components
-        self.communication_framework = AgentCommunicationFramework()
+        # Framework will be injected via set_communication_framework
         self.session_manager = SessionManager()
         self.goal_parser = GoalParser()
         self.trigger_monitor = TriggerMonitor(self)
-        self.task_delegator = TaskDelegator(self.communication_framework)
+        self.task_delegator = TaskDelegator(None)
         
         # Workflow management
         self.current_workflows: Dict[str, Dict[str, Any]] = {}
@@ -617,6 +617,12 @@ class OrchestrationAgent(BaseAgent):
         
         self.logger.info("Enhanced Orchestration Agent initialized")
     
+    def set_communication_framework(self, framework: Any) -> None:
+        """Set the communication framework instance and update dependencies"""
+        super().set_communication_framework(framework)
+        if self.task_delegator:
+            self.task_delegator.communication_framework = framework
+
     async def start(self) -> None:
         """Start the orchestration agent and all subsystems"""
         await super().start()

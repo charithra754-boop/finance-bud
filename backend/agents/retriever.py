@@ -19,9 +19,10 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import uuid4
 
+from .base_agent import BaseAgent
 from data_models.schemas import (
     MarketData, MarketContext, TriggerEvent, MarketEventType,
-    SeverityLevel, PerformanceMetrics
+    SeverityLevel, PerformanceMetrics, AgentMessage
 )
 from agents.external_apis import (
     BarchartAPIConnector, AlphaVantageAPIConnector,
@@ -36,7 +37,7 @@ from utils.constants import (
 )
 
 
-class InformationRetrievalAgent:
+class InformationRetrievalAgent(BaseAgent):
     """
     Advanced Information Retrieval Agent with multi-source integration.
 
@@ -66,6 +67,7 @@ class InformationRetrievalAgent:
             use_mock: Whether to use mock data (for testing)
             log_level: Logging level
         """
+        super().__init__(agent_id="information_retrieval_agent", agent_type="information_retrieval")
         self.logger = get_logger("InformationRetrievalAgent", level=log_level)
         self.use_mock = use_mock
 
@@ -83,13 +85,29 @@ class InformationRetrievalAgent:
         self.historical_data: Dict[str, List[MarketData]] = {}
         self.trigger_history: List[TriggerEvent] = []
 
-        # Performance tracking
-        self.performance_metrics: List[PerformanceMetrics] = []
+        # Performance tracking (BaseAgent has this, but IRA initializes list)
+        self.performance_metrics_history: List[PerformanceMetrics] = []
 
         self.logger.info("InformationRetrievalAgent initialized", extra_data={
             'use_mock': use_mock,
             'redis_url': redis_url
         })
+
+    async def start(self) -> None:
+        """Start the agent and initialize resources"""
+        await self.initialize()
+        await super().start()
+
+    async def stop(self) -> None:
+        """Stop the agent and cleanup resources"""
+        await self.shutdown()
+        await super().stop()
+
+    async def process_message(self, message: AgentMessage) -> Optional[AgentMessage]:
+        """Process incoming messages"""
+        # TODO: Implement message handling for IRA (e.g., market data requests)
+        self.logger.info(f"IRA received message: {message.message_type}")
+        return None
 
     def _init_connectors(
         self,

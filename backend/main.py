@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
 
     # Create all agents using factory
     factory = get_agent_factory()
-    initialized_agents = factory.create_all_agents()
+    initialized_agents = await factory.create_all_agents()
     agents.update(initialized_agents)
 
     # Log conversational endpoints availability
@@ -93,7 +93,7 @@ async def lifespan(app: FastAPI):
 
     # Cleanup
     logger.info("🛑 Shutting down agents...")
-    factory.shutdown()
+    await factory.shutdown()
 
 
 # Create FastAPI app
