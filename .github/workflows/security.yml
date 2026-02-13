@@ -1,0 +1,81 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Python Security Scan (bandit)
+  # ─────────────────────────────────────────────
+  backend-security:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install bandit
+        run: pip install bandit
+
+      - name: Run bandit security scan
+        run: |
+          bandit -r agents/ api/ data_models/ utils/ main.py \
+            -f json -o bandit-report.json \
+            --severity-level medium \
+            || true
+
+      - name: Display scan results
+        if: always()
+        run: |
+          bandit -r agents/ api/ data_models/ utils/ main.py \
+            --severity-level medium \
+            -f screen \
+            || true
+
+      - name: Upload bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: backend/bandit-report.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # Frontend Dependency Audit
+  # ─────────────────────────────────────────────
+  frontend-security:
+    name: Frontend Dependency Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high || true
+
+      - name: Install and audit with npm
+        run: |
+          npm ci
+          npm audit --audit-level=critical
