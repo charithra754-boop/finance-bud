@@ -742,6 +742,10 @@ class OrchestrationAgent(BaseAgent):
             payload = message.payload
             action = payload.get("action")
             
+            # Handle direct user goal submission from API gateway
+            if "user_goal" in payload and not action:
+                return await self._handle_user_goal_submission(message)
+            
             if action == "plan_generated":
                 return await self._handle_plan_generated(message)
             elif action == "verification_complete":
@@ -763,6 +767,48 @@ class OrchestrationAgent(BaseAgent):
         except Exception as e:
             self.logger.error(f"Error processing message: {str(e)}")
             return self._create_error_response(message, str(e))
+    
+    async def _handle_user_goal_submission(self, message: AgentMessage) -> AgentMessage:
+        """Handle user goal submission from API gateway"""
+        payload = message.payload
+        user_goal = payload.get("user_goal", "")
+        user_id = payload.get("user_id", "anonymous")
+        user_context = payload.get("user_context", {})
+        
+        try:
+            workflow_id = await self.process_user_goal(user_id, user_goal, user_context)
+            
+            return AgentMessage(
+                agent_id=self.agent_id,
+                target_agent_id=message.agent_id,
+                message_type=MessageType.RESPONSE,
+                payload={
+                    "status": "accepted",
+                    "workflow_id": workflow_id,
+                    "user_goal": user_goal,
+                    "message": f"Financial goal accepted and workflow initiated: {workflow_id}"
+                },
+                correlation_id=message.correlation_id,
+                session_id=message.session_id,
+                trace_id=message.trace_id,
+                priority=message.priority
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to process user goal: {str(e)}")
+            return AgentMessage(
+                agent_id=self.agent_id,
+                target_agent_id=message.agent_id,
+                message_type=MessageType.ERROR,
+                payload={
+                    "status": "failed",
+                    "error": str(e),
+                    "user_goal": user_goal
+                },
+                correlation_id=message.correlation_id,
+                session_id=message.session_id,
+                trace_id=message.trace_id,
+                priority=message.priority
+            )
     
     async def _create_workflow(self, plan_request: EnhancedPlanRequest) -> str:
         """Create a new workflow for processing a plan request"""

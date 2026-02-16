@@ -675,9 +675,9 @@ class WorkflowOrchestrator:
             # Step 5: Await user approval if required
             if plan_adjustment.requires_user_approval:
                 await self._transition_state(session, WorkflowState.AWAITING_APPROVAL, None)
-                # In a real implementation, this would wait for user input
-                # For now, we'll simulate approval
-                await asyncio.sleep(1)
+                # TODO: Implement real user approval flow (e.g., via WebSocket/polling)
+                # For now, auto-approve after a brief yield to event loop
+                await asyncio.sleep(0)
                 plan_adjustment.approval_status = "approved"
                 plan_adjustment.approved_by = session.user_id
                 plan_adjustment.approved_at = datetime.utcnow()
@@ -747,11 +747,40 @@ class WorkflowOrchestrator:
         return classified_trigger
     
     async def _retrieve_context_information(self, session: WorkflowSession, classified_trigger: ClassifiedTrigger) -> Dict[str, Any]:
-        """Retrieve context information from information retrieval agent"""
-        # Simulate information retrieval
-        await asyncio.sleep(0.5)
+        """Retrieve context information from information retrieval agent via communication framework"""
+        target_agent_id = "information_retrieval_agent"
         
-        context_data = {
+        # Create message for the information retrieval agent
+        message = self.communication_framework.create_message(
+            sender_id="cmvl_workflow_orchestrator",
+            target_id=target_agent_id,
+            message_type=MessageType.REQUEST,
+            payload={
+                "action": "retrieve_context",
+                "trigger": {
+                    "trigger_id": classified_trigger.trigger_event.trigger_id,
+                    "classification": classified_trigger.classification,
+                    "priority_score": classified_trigger.priority_score,
+                    "urgency_level": classified_trigger.urgency_level.value
+                },
+                "user_id": session.user_id,
+                "session_id": session.session_id
+            }
+        )
+        
+        # Route through framework for tracking/metrics
+        await self.communication_framework.send_message(message)
+        
+        # Get the agent and process
+        target_agent = self.communication_framework.registry.get_agent(target_agent_id)
+        if target_agent:
+            response = await target_agent.process_message(message)
+            if response and response.payload:
+                return response.payload
+        
+        # Fallback if agent not available
+        self.logger.warning(f"Agent {target_agent_id} not available, using default context")
+        return {
             "current_financial_state": {
                 "total_assets": 150000,
                 "total_liabilities": 50000,
@@ -765,27 +794,57 @@ class WorkflowOrchestrator:
             },
             "user_preferences": {
                 "risk_tolerance": "moderate",
-                "investment_horizon": 120  # 10 years
+                "investment_horizon": 120
             }
         }
-        
-        return context_data
     
     async def _generate_plan_adjustments(self, session: WorkflowSession, classified_trigger: ClassifiedTrigger, context_data: Dict[str, Any]) -> PlanAdjustment:
-        """Generate plan adjustments using planning agent"""
-        # Simulate plan adjustment generation
-        await asyncio.sleep(1.0)
-        
-        # Create a sample plan adjustment
+        """Generate plan adjustments using planning agent via communication framework"""
         from data_models.schemas import PlanChange, ImpactAnalysis
         
+        target_agent_id = "planning_agent"
+        
+        # Create message for the planning agent
+        message = self.communication_framework.create_message(
+            sender_id="cmvl_workflow_orchestrator",
+            target_id=target_agent_id,
+            message_type=MessageType.REQUEST,
+            payload={
+                "action": "generate_adjustment",
+                "trigger": {
+                    "trigger_id": classified_trigger.trigger_event.trigger_id,
+                    "classification": classified_trigger.classification,
+                    "priority_score": classified_trigger.priority_score,
+                    "urgency_level": classified_trigger.urgency_level.value
+                },
+                "context_data": context_data,
+                "user_id": session.user_id,
+                "session_id": session.session_id
+            }
+        )
+        
+        # Route through framework for tracking/metrics
+        await self.communication_framework.send_message(message)
+        
+        # Get the agent and process
+        target_agent = self.communication_framework.registry.get_agent(target_agent_id)
+        if target_agent:
+            response = await target_agent.process_message(message)
+            if response and response.payload and "plan_adjustment" in response.payload:
+                plan_adjustment_data = response.payload["plan_adjustment"]
+                if isinstance(plan_adjustment_data, PlanAdjustment):
+                    session.proposed_adjustments = plan_adjustment_data.dict()
+                    return plan_adjustment_data
+        
+        # Fallback: create a default plan adjustment if agent not available
+        self.logger.warning(f"Agent {target_agent_id} not available, using default adjustments")
         plan_changes = [
             PlanChange(
                 change_type="modify",
                 target_component="emergency_fund",
                 original_value={"amount": 18000},
                 new_value={"amount": 24000},
-                rationale="Increase emergency fund due to job loss risk",
+                rationale="Increase emergency fund due to trigger event",
                 impact_assessment={"timeline_months": 6, "risk_reduction": 0.3},
                 confidence_score=0.85,
                 created_by_agent="planning_agent"
@@ -810,7 +869,7 @@ class WorkflowOrchestrator:
             adjustment_scope="partial",
             proposed_changes=plan_changes,
             impact_analysis=impact_analysis,
-            adjustment_rationale="Responding to potential job loss by strengthening emergency fund",
+            adjustment_rationale="Responding to trigger event by strengthening emergency fund",
             confidence_score=0.82,
             risk_assessment={"implementation_risk": "low", "market_risk": "medium"},
             created_by_agent="planning_agent"
@@ -820,10 +879,35 @@ class WorkflowOrchestrator:
         return plan_adjustment
     
     async def _validate_plan_adjustments(self, session: WorkflowSession, plan_adjustment: PlanAdjustment) -> Dict[str, Any]:
-        """Validate plan adjustments using verification agent"""
-        # Simulate validation
-        await asyncio.sleep(0.8)
+        """Validate plan adjustments using verification agent via communication framework"""
+        target_agent_id = "verification_agent"
         
+        # Create message for the verification agent
+        message = self.communication_framework.create_message(
+            sender_id="cmvl_workflow_orchestrator",
+            target_id=target_agent_id,
+            message_type=MessageType.REQUEST,
+            payload={
+                "action": "validate_adjustment",
+                "plan_adjustment": plan_adjustment.dict(),
+                "user_id": session.user_id,
+                "session_id": session.session_id
+            }
+        )
+        
+        # Route through framework for tracking/metrics
+        await self.communication_framework.send_message(message)
+        
+        # Get the agent and process
+        target_agent = self.communication_framework.registry.get_agent(target_agent_id)
+        if target_agent:
+            response = await target_agent.process_message(message)
+            if response and response.payload:
+                session.validation_results = response.payload
+                return response.payload
+        
+        # Fallback if agent not available
+        self.logger.warning(f"Agent {target_agent_id} not available, using default validation")
         validation_result = {
             "validation_status": "approved",
             "constraint_violations": [],
@@ -836,14 +920,40 @@ class WorkflowOrchestrator:
         return validation_result
     
     async def _execute_plan_changes(self, session: WorkflowSession, plan_adjustment: PlanAdjustment) -> Dict[str, Any]:
-        """Execute plan changes using execution agent"""
-        # Simulate execution
-        await asyncio.sleep(0.6)
+        """Execute plan changes using execution agent via communication framework"""
+        target_agent_id = "execution_agent"
         
+        # Create message for the execution agent
+        message = self.communication_framework.create_message(
+            sender_id="cmvl_workflow_orchestrator",
+            target_id=target_agent_id,
+            message_type=MessageType.REQUEST,
+            payload={
+                "action": "execute_changes",
+                "plan_adjustment": plan_adjustment.dict(),
+                "user_id": session.user_id,
+                "session_id": session.session_id
+            }
+        )
+        
+        # Route through framework for tracking/metrics
+        await self.communication_framework.send_message(message)
+        
+        # Get the agent and process
+        target_agent = self.communication_framework.registry.get_agent(target_agent_id)
+        if target_agent:
+            response = await target_agent.process_message(message)
+            if response and response.payload:
+                session.execution_results = response.payload
+                plan_adjustment.execution_status = ExecutionStatus.COMPLETED
+                return response.payload
+        
+        # Fallback if agent not available
+        self.logger.warning(f"Agent {target_agent_id} not available, using default execution result")
         execution_result = {
             "execution_status": "completed",
             "changes_implemented": len(plan_adjustment.proposed_changes),
-            "execution_time": 0.6,
+            "execution_time": 0.0,
             "success_rate": 1.0
         }
         

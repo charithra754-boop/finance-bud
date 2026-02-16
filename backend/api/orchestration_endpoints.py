@@ -10,6 +10,7 @@ import time
 
 from data_models.schemas import AgentMessage, MessageType, Priority
 from api.utils import create_api_response, get_request_id
+from agents.factory import get_agent_factory
 
 router = APIRouter(
     prefix="/api/v1/orchestration",
@@ -51,13 +52,18 @@ async def submit_goal(request: Dict[str, Any]):
             priority=Priority[request.get("priority", "MEDIUM").upper()]
         )
 
-        # Process message
+        # Route through communication framework for tracking/metrics
+        factory = get_agent_factory()
+        if factory.communication_framework:
+            await factory.communication_framework.send_message(message)
+
+        # Process message and get synchronous response
         response = await _agents["orchestration"].process_message(message)
 
         execution_time = time.time() - start_time
         return create_api_response(
             success=True,
-            data=response.payload,
+            data=response.payload if response else {"status": "accepted"},
             request_id=request_id,
             execution_time=execution_time
         )

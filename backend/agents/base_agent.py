@@ -106,9 +106,11 @@ class BaseAgent(ABC):
             if hasattr(self, 'communication_framework') and self.communication_framework:
                 await self.communication_framework.send_message(message)
             else:
-                # Simulate message sending (fallback for testing/mock)
-                self.logger.warning("No communication framework set, simulating message send")
-                await asyncio.sleep(0.01)
+                # No framework set - raise an error so callers know
+                raise RuntimeError(
+                    f"Agent {self.agent_id} has no communication framework set. "
+                    "Ensure agents are registered with the AgentCommunicationFramework."
+                )
             
             execution_time = time.time() - start_time
             message.performance_metrics.execution_time = execution_time

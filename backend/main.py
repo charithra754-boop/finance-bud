@@ -175,12 +175,42 @@ async def health_check():
     }
 
 
+@app.get("/api/v1/agents/health")
+async def agent_communication_health():
+    """Agent communication framework health endpoint.
+    
+    Returns detailed health metrics from the AgentCommunicationFramework including:
+    - Per-agent health and status
+    - Circuit breaker states
+    - Message throughput metrics (total, successful, failed)
+    - Success rate and uptime
+    - Active correlation tracking
+    """
+    factory = get_agent_factory()
+    
+    if factory.communication_framework:
+        framework_health = factory.communication_framework.get_system_health()
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "communication_framework": framework_health
+        }
+    else:
+        return {
+            "status": "degraded",
+            "timestamp": datetime.utcnow().isoformat(),
+            "communication_framework": None,
+            "error": "Communication framework not initialized"
+        }
+
+
 # Root endpoint
 @app.get("/")
 async def root():
     """Root endpoint with API information"""
     endpoints = {
         "health": "/health",
+        "agents_health": "/api/v1/agents/health",
         "docs": "/docs",
         "orchestration": "/api/v1/orchestration",
         "planning": "/api/v1/planning",

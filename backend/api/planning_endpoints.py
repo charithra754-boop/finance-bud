@@ -10,6 +10,7 @@ import time
 
 from data_models.schemas import AgentMessage, MessageType
 from api.utils import create_api_response, get_request_id
+from agents.factory import get_agent_factory
 
 router = APIRouter(
     prefix="/api/v1/planning",
@@ -48,6 +49,11 @@ async def generate_plan(request: Dict[str, Any]):
             session_id=request.get("session_id", request_id),
             trace_id=request_id
         )
+
+        # Route through communication framework for tracking/metrics
+        factory = get_agent_factory()
+        if factory.communication_framework:
+            await factory.communication_framework.send_message(message)
 
         response = await _agents["planning"].process_message(message)
 

@@ -10,6 +10,7 @@ import time
 
 from data_models.schemas import AgentMessage, MessageType
 from api.utils import create_api_response, get_request_id
+from agents.factory import get_agent_factory
 
 router = APIRouter(
     prefix="/api/v1/market",
@@ -58,6 +59,11 @@ async def get_market_data(symbols: Optional[str] = None, refresh: bool = False):
             trace_id=request_id
         )
 
+        # Route through communication framework for tracking/metrics
+        factory = get_agent_factory()
+        if factory.communication_framework:
+            await factory.communication_framework.send_message(message)
+
         response = await _agents["information_retrieval"].process_message(message)
 
         execution_time = time.time() - start_time
@@ -100,6 +106,11 @@ async def detect_triggers(request: Dict[str, Any]):
             session_id=request_id,
             trace_id=request_id
         )
+
+        # Route through communication framework for tracking/metrics
+        factory = get_agent_factory()
+        if factory.communication_framework:
+            await factory.communication_framework.send_message(message)
 
         response = await _agents["information_retrieval"].process_message(message)
 
